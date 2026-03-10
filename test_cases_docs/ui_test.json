@@ -1,0 +1,187 @@
+{
+  "test_cases": [
+    {
+      "id": "UI-001",
+      "scenario": "Application launches",
+      "steps": [
+        "Open application"
+      ],
+      "expected_result": "Main window appears without errors",
+      "priority": "High"
+    },
+    {
+      "id": "UI-002",
+      "scenario": "Form selection works",
+      "steps": [
+        "Toggle Evaluation / Final radio buttons"
+      ],
+      "expected_result": "Selected option updates correctly",
+      "priority": "Medium"
+    },
+    {
+      "id": "UI-003",
+      "scenario": "Repairs toggle enables controls",
+      "steps": [
+        "Select 'Yes' for repairs"
+      ],
+      "expected_result": "'Choose repair items' button enabled",
+      "priority": "High"
+    },
+    {
+      "id": "UI-004",
+      "scenario": "Repairs toggle disables controls",
+      "steps": [
+        "Switch repairs to 'No'"
+      ],
+      "expected_result": "Buttons disabled and preview cleared",
+      "priority": "High"
+    },
+    {
+      "id": "UI-005",
+      "scenario": "Items toggle enables controls",
+      "steps": [
+        "Select 'Yes' for items"
+      ],
+      "expected_result": "Items selection button enabled",
+      "priority": "Medium"
+    },
+    {
+      "id": "UI-006",
+      "scenario": "Repairs popup opens",
+      "steps": [
+        "Click 'Choose repair items'"
+      ],
+      "expected_result": "Repairs popup window appears",
+      "priority": "High"
+    },
+    {
+      "id": "UI-007",
+      "scenario": "Items popup opens",
+      "steps": [
+        "Click 'Choose items'"
+      ],
+      "expected_result": "Items popup window appears",
+      "priority": "High"
+    },
+    {
+      "id": "UI-008",
+      "scenario": "Repair preview works",
+      "steps": [
+        "Select items",
+        "Click Preview"
+      ],
+      "expected_result": "Selected repairs appear in preview text",
+      "priority": "Medium"
+    },
+    {
+      "id": "UI-009",
+      "scenario": "Items preview grouped output",
+      "steps": [
+        "Select items across categories"
+      ],
+      "expected_result": "Preview shows grouped items",
+      "priority": "Medium"
+    },
+    {
+      "id": "UI-010",
+      "scenario": "Popup OK saves selections",
+      "steps": [
+        "Select items",
+        "Click OK"
+      ],
+      "expected_result": "Preview text appears in main window",
+      "priority": "High"
+    },
+    {
+      "id": "UI-011",
+      "scenario": "Copy repairs text",
+      "steps": [
+        "Click Copy Text"
+      ],
+      "expected_result": "Text copied to clipboard and section resets",
+      "priority": "Medium"
+    },
+    {
+      "id": "UI-012",
+      "scenario": "Copy items text",
+      "steps": [
+        "Click Copy Text"
+      ],
+      "expected_result": "Items copied and preview cleared",
+      "priority": "Medium"
+    },
+    {
+      "id": "UI-013",
+      "scenario": "Empty input validation",
+      "steps": [
+        "Click Processing Data with empty textbox"
+      ],
+      "expected_result": "Warning message appears",
+      "priority": "High"
+    },
+    {
+      "id": "UI-014",
+      "scenario": "Extract Data Only option",
+      "steps": [
+        "Select Extract Data Only"
+      ],
+      "expected_result": "Preview shows extracted rows",
+      "priority": "Medium"
+    },
+    {
+      "id": "UI-015",
+      "scenario": "Multi-line extraction",
+      "steps": [
+        "Enable multi-line",
+        "Paste multiple rows"
+      ],
+      "expected_result": "All rows extracted correctly",
+      "priority": "Medium"
+    },
+    {
+      "id": "UI-016",
+      "scenario": "Folder creation",
+      "steps": [
+        "Select Folders Only"
+      ],
+      "expected_result": "Folder created with correct name",
+      "priority": "High"
+    },
+    {
+      "id": "UI-017",
+      "scenario": "PDF generation",
+      "steps": [
+        "Select PDF Only"
+      ],
+      "expected_result": "Filled PDF file created successfully",
+      "priority": "High"
+    },
+    {
+      "id": "UI-018",
+      "scenario": "Combined processing",
+      "steps": [
+        "Select Folder and PDF"
+      ],
+      "expected_result": "Both folder and PDF generated",
+      "priority": "High"
+    },
+    {
+      "id": "UI-019",
+      "scenario": "Print option",
+      "steps": [
+        "Enable print option"
+      ],
+      "expected_result": "Generated PDF is sent to printer",
+      "priority": "Medium"
+    },
+    {
+      "id": "UI-020",
+      "scenario": "Missing repairs warning",
+      "steps": [
+        "Repairs set to Yes but none selected"
+      ],
+      "expected_result": "Warning dialog appears",
+      "priority": "Medium"
+    }
+  ]
+}
