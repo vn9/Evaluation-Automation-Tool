@@ -1,2 +1,14 @@
 # Evaluation-Automation-Tool
 A Python-based GUI that extracts and processes raw data (textbox), then automatically fills and generates fillable PDF documents with the processed results. Ideal for automating form generation, reporting, and document workflows.
+
+The application allows users to:
+<ul>
+  <li> Paste Helpdesk job data</li>
+  <li> Extract and format information </li>
+  <li> Select repair items or inspection items </li>
+  <li> Generate folders</li>
+  <li> Fill PDF forms automatically</li>
+  <li> Print the generated documents</li>
+</ul>
+
+Testing focused on UI behavior, business logic validation, and file generation functionality.
