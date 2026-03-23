@@ -1,88 +1,282 @@
-{
-  "test_cases": [
-    {
-      "id": "BE-001",
-      "scenario": "Extract standard Helpdesk row",
-      "input": "9-column row",
-      "expected_result": "Correct job/customer/model/serial extracted"
-    },
-    {
-      "id": "BE-002",
-      "scenario": "Extract formatted row",
-      "input": "4-column row",
-      "expected_result": "Data accepted without modification"
-    },
-    {
-      "id": "BE-003",
-      "scenario": "Missing job number",
-      "input": "3 columns with text first",
-      "expected_result": "Blank job number inserted"
-    },
-    {
-      "id": "BE-004",
-      "scenario": "Invalid data row",
-      "input": "Unexpected column count",
-      "expected_result": "Warning message displayed"
-    },
-    {
-      "id": "BE-005",
-      "scenario": "Data formatting",
-      "input": "Extracted row",
-      "expected_result": "Text formatted as Job/Model/SN/Customer"
-    },
-    {
-      "id": "BE-006",
-      "scenario": "Folder naming rule",
-      "input": "Valid row",
-      "expected_result": "Folder name follows naming convention"
-    },
-    {
-      "id": "BE-007",
-      "scenario": "Evaluation vs Final folder suffix",
-      "input": "Form selection change",
-      "expected_result": "Folder suffix changes (E/F)"
-    },
-    {
-      "id": "BE-008",
-      "scenario": "Repairs sorting",
-      "input": "Multiple categories selected",
-      "expected_result": "Repairs sorted by priority"
-    },
-    {
-      "id": "BE-009",
-      "scenario": "Items grouped preview",
-      "input": "Items across categories",
-      "expected_result": "Items grouped under category"
-    },
-    {
-      "id": "BE-010",
-      "scenario": "QR code generation",
-      "input": "Valid row",
-      "expected_result": "QR image created successfully"
-    },
-    {
-      "id": "BE-011",
-      "scenario": "PDF field mapping",
-      "input": "Filled data dictionary",
-      "expected_result": "Correct fields populated in PDF"
-    },
-    {
-      "id": "BE-012",
-      "scenario": "Missing template PDF",
-      "input": "Template removed",
-      "expected_result": "Error message displayed"
-    },
-    {
-      "id": "BE-013",
-      "scenario": "Multiple row extraction",
-      "input": "Multi-line paste",
-      "expected_result": "All rows parsed correctly"
-    },
-    {
-      "id": "BE-014",
-      "scenario": "Process routing",
-      "input": "Different processing modes",
-      "expected_result": "Correct function executed"
-    }
-  ]
-}
+[
+  {
+    "Test Case ID":"BE-001",
+    "Module":"Data Extraction",
+    "Title":"Extract valid 9-column helpdesk row",
+    "Objectives":"Ensure standard Helpdesk format is correctly parsed into required fields (Job, Customer, Model, Serial) ",
+    "Preconditions":"Application logic available",
+    "Test_Steps":"1. Provide one tab-delimited row with 9 columns\n2. Call extract_data()",
+    "Test_Data":"123\tA\tB\tC\tCustomerX\tE\tModelX\tG\tSN123",
+    "Expected_Result":"Returns one row mapped as [Job#, Customer, Model, Serial]",
+    "Priority":"High",
+    "Execution_Status":"Pass",
+    "Defect_ID":null,
+    "Comments":"Maps cols[0], cols[4], cols[6], cols[-1] in gui.py"
+  },
+  {
+    "Test Case ID":"BE-002",
+    "Module":"Data Extraction",
+    "Title":"Accept valid 4-column formatted row",
+    "Objectives":"Ensure pre-formatted input is preserved without modification ",
+    "Preconditions":"Application logic available",
+    "Test_Steps":"1. Provide one tab-delimited row with 4 columns\n2. Call extract_data()",
+    "Test_Data":"123\tCustomerX\tModelX\tSN123",
+    "Expected_Result":"Returns the same 4-column row unchanged",
+    "Priority":"High",
+    "Execution_Status":"Pass",
+    "Defect_ID":null,
+    "Comments":"Handled by len(cols)==4 branch"
+  },
+  {
+    "Test Case ID":"BE-003",
+    "Module":"Data Extraction",
+    "Title":"Accept 3-column row missing job number",
+    "Objectives":"Ensure system gracefully handles missing job number and inserts default value ",
+    "Preconditions":"Application logic available",
+    "Test_Steps":"1. Provide a 3-column row where first value is non-numeric\n2. Call extract_data()",
+    "Test_Data":"CustomerX\tModelX\tSN123",
+    "Expected_Result":"Blank job number inserted at first position",
+    "Priority":"Medium",
+    "Execution_Status":"Pass",
+    "Defect_ID":null,
+    "Comments":"Handled by len(cols)==3 and non-numeric first value"
+  },
+  {
+    "Test Case ID":"BE-004",
+    "Module":"Data Extraction",
+    "Title":"Reject empty input",
+    "Objectives":"Ensure system prevents processing when no input is provided ",
+    "Preconditions":"Textbox empty",
+    "Test_Steps":"1. Leave input blank\n2. Call extract_data()",
+    "Test_Data":null,
+    "Expected_Result":"Warning is shown and empty list is returned",
+    "Priority":"High",
+    "Execution_Status":"Pass",
+    "Defect_ID":null,
+    "Comments":"messagebox warning then return []"
+  },
+  {
+    "Test Case ID":"BE-005",
+    "Module":"Data Extraction",
+    "Title":"Handle invalid column count",
+    "Objectives":"Ensure invalid data formats are detected and safely ignored without crashing ",
+    "Preconditions":"Application logic available",
+    "Test_Steps":"1. Provide row with unsupported number of columns\n2. Call extract_data()",
+    "Test_Data":"a\tb\tc\td\te",
+    "Expected_Result":"Warning is shown for invalid line and line is skipped",
+    "Priority":"High",
+    "Execution_Status":"Pass",
+    "Defect_ID":null,
+    "Comments":"continue after warning"
+  },
+  {
+    "Test Case ID":"BE-006",
+    "Module":"Formatting",
+    "Title":"Format extracted row into info block",
+    "Objectives":"Ensure extracted data is formatted correctly for PDF fields ",
+    "Preconditions":"One valid extracted row exists",
+    "Test_Steps":"1. Call format_data(row)",
+    "Test_Data":"['123','CustomerX','ModelX','SN123']",
+    "Expected_Result":"Output contains Job#, Model, S\/N, Customer on separate lines",
+    "Priority":"High",
+    "Execution_Status":"Pass",
+    "Defect_ID":null,
+    "Comments":"String template is correct"
+  },
+  {
+    "Test Case ID":"BE-007",
+    "Module":"QR Generation",
+    "Title":"Generate QR image bytes for valid data",
+    "Objectives":"Ensure QR code is generated correctly and usable for embedding ",
+    "Preconditions":"QR dependencies available",
+    "Test_Steps":"1. Call generate_qr_image(data)",
+    "Test_Data":"123\tCustomerX\tModelX\tSN123",
+    "Expected_Result":"Returns non-empty PNG bytes stream",
+    "Priority":"High",
+    "Execution_Status":"Pass",
+    "Defect_ID":null,
+    "Comments":"Function creates PNG in BytesIO"
+  },
+  {
+    "Test Case ID":"BE-008",
+    "Module":"PDF Field Fill",
+    "Title":"Fill PDF form fields writer object",
+    "Objectives":"Ensure QR code is actually embedded into the PDF output. Detect missing integration or incomplete implementation",
+    "Preconditions":"Source PDF exists and fields names match",
+    "Test_Steps":"1. Call fill_pdf_fields(src_pdf, data)",
+    "Test_Data":"{'info':'a','repair':'b','notes':'c'}",
+    "Expected_Result":"Returns PdfWriter with form values updated",
+    "Priority":"High",
+    "Execution_Status":"Pass",
+    "Defect_ID":null,
+    "Comments":"NeedAppearances set and update_page_form_field_values called"
+  },
+  {
+    "Test Case ID":"BE-009",
+    "Module":"QR Overlay",
+    "Title":"Merge QR overlay onto first page of PDF",
+    "Objectives":"Ensure PDF form fields are correctly populated with user data ",
+    "Preconditions":"Writer has at least one page",
+    "Test_Steps":"1. Call add_qr_to_existing_pdf(writer, qr_bytes)",
+    "Test_Data":"Valid writer and QR bytes",
+    "Expected_Result":"QR should be merged onto page 1 and returned writer should include QR",
+    "Priority":"High",
+    "Execution_Status":"Fail",
+    "Defect_ID":"BUG-001",
+    "Comments":"merge_page line is commented out, so QR is not applied"
+  },
+  {
+    "Test Case ID":"BE-010",
+    "Module":"Prepare PDF",
+    "Title":"Stop when source PDF is missing",
+    "Objectives":"Ensure system handles missing template files safely ",
+    "Preconditions":"Selected source PDF missing from runtime bundle",
+    "Test_Steps":"1. Call prepare_pdf() with missing ev7.pdf or preship5.pdf",
+    "Test_Data":null,
+    "Expected_Result":"Error dialog shown and processing stops",
+    "Priority":"High",
+    "Execution_Status":"Pass",
+    "Defect_ID":null,
+    "Comments":"Exists check then showerror return"
+  },
+  {
+    "Test Case ID":"BE-011",
+    "Module":"Prepare PDF",
+    "Title":"Require extracted rows before PDF generation",
+    "Objectives":"Ensure PDF generation does not proceed with invalid or empty data ",
+    "Preconditions":"Textbox invalid or empty",
+    "Test_Steps":"1. Trigger prepare_pdf()\n2. extract_data() returns []",
+    "Test_Data":null,
+    "Expected_Result":"Function exits without creating PDF",
+    "Priority":"High",
+    "Execution_Status":"Pass",
+    "Defect_ID":null,
+    "Comments":"Early return after rows check"
+  },
+  {
+    "Test Case ID":"BE-012",
+    "Module":"Prepare PDF",
+    "Title":"Warn when repairs selected but none chosen",
+    "Objectives":"Ensure validation logic enforces user input consistency for repairs ",
+    "Preconditions":"rep_var=yes and repairs text blank",
+    "Test_Steps":"1. Set rep_var to yes\n2. Keep repairs text empty\n3. Trigger prepare_pdf()",
+    "Test_Data":null,
+    "Expected_Result":"Confirmation dialog appears before continuing",
+    "Priority":"Medium",
+    "Execution_Status":"Pass",
+    "Defect_ID":null,
+    "Comments":"askyesno is called"
+  },
+  {
+    "Test Case ID":"BE-013",
+    "Module":"Prepare PDF",
+    "Title":"Warn when items selected but none chosen",
+    "Objectives":"Ensure validation logic enforces user input consistency for items ",
+    "Preconditions":"items_var=yes and items text blank",
+    "Test_Steps":"1. Set items_var to yes\n2. Keep items text empty\n3. Trigger prepare_pdf()",
+    "Test_Data":null,
+    "Expected_Result":"Confirmation dialog appears before continuing",
+    "Priority":"Medium",
+    "Execution_Status":"Pass",
+    "Defect_ID":null,
+    "Comments":"askyesno is called"
+  },
+  {
+    "Test Case ID":"BE-014",
+    "Module":"Prepare PDF",
+    "Title":"Create output PDF file with timestamped name",
+    "Objectives":"Ensure generated files follow correct naming convention and uniqueness ",
+    "Preconditions":"Valid input and output folder selected",
+    "Test_Steps":"1. Trigger prepare_pdf()\n2. Select output folder",
+    "Test_Data":null,
+    "Expected_Result":"PDF is saved as ev7_filled_YYYYMMDD_HHMMSS.pdf or preship5_filled_...",
+    "Priority":"High",
+    "Execution_Status":"Pass",
+    "Defect_ID":null,
+    "Comments":"Timestamped filename built correctly"
+  },
+  {
+    "Test Case ID":"BE-015",
+    "Module":"Printing",
+    "Title":"Print generated PDF when print option is yes",
+    "Objectives":"Ensure print functionality is triggered correctly when enabled ",
+    "Preconditions":"Prepared PDF exists and print_var=yes",
+    "Test_Steps":"1. Trigger prepare_pdf()\n2. Select print=yes",
+    "Test_Data":null,
+    "Expected_Result":"win32api.ShellExecute called with print verb and status updated",
+    "Priority":"Medium",
+    "Execution_Status":"Pass",
+    "Defect_ID":null,
+    "Comments":"Print branch exists"
+  },
+  {
+    "Test Case ID":"BE-016",
+    "Module":"Folder Creation",
+    "Title":"Create folder for Evaluation form",
+    "Objectives":"Ensure folder naming logic is correct for Evaluation workflow ",
+    "Preconditions":"Valid extracted first row and folder selected",
+    "Test_Steps":"1. form_var=Evaluation\n2. Trigger create_folder()",
+    "Test_Data":null,
+    "Expected_Result":"Folder name format uses suffix E",
+    "Priority":"High",
+    "Execution_Status":"Pass",
+    "Defect_ID":null,
+    "Comments":"Folder pattern includes (#jobE-customer)"
+  },
+  {
+    "Test Case ID":"BE-017",
+    "Module":"Folder Creation",
+    "Title":"Create folder for Final form",
+    "Objectives":"Ensure folder naming logic adapts correctly based on form type ",
+    "Preconditions":"Valid extracted first row and folder selected",
+    "Test_Steps":"1. form_var=Final\n2. Trigger create_folder()",
+    "Test_Data":null,
+    "Expected_Result":"Folder name format uses suffix F",
+    "Priority":"High",
+    "Execution_Status":"Pass",
+    "Defect_ID":null,
+    "Comments":"Option switches to F"
+  },
+  {
+    "Test Case ID":"BE-018",
+    "Module":"Batch Processing",
+    "Title":"Process all extracted rows for folder creation",
+    "Objectives":"Ensure system supports multi-record processing (scalability) ",
+    "Preconditions":"Multi-line input with multiple rows",
+    "Test_Steps":"1. Provide multiple valid rows\n2. Trigger create_folder()",
+    "Test_Data":null,
+    "Expected_Result":"A folder should be created for every extracted row",
+    "Priority":"High",
+    "Execution_Status":"Fail",
+    "Defect_ID":"BUG-002",
+    "Comments":"Only rows[0] is used"
+  },
+  {
+    "Test Case ID":"BE-019",
+    "Module":"Batch Processing",
+    "Title":"Process all extracted rows for PDF generation",
+    "Objectives":"Ensure system generates outputs for all records, not just the first ",
+    "Preconditions":"Multi-line input with multiple rows",
+    "Test_Steps":"1. Provide multiple valid rows\n2. Trigger prepare_pdf()",
+    "Test_Data":null,
+    "Expected_Result":"A PDF should be generated for every extracted row or user-selected behavior should be clear",
+    "Priority":"High",
+    "Execution_Status":"Fail",
+    "Defect_ID":"BUG-002",
+    "Comments":"Only first row is used in prepare_pdf()"
+  },
+  {
+    "Test Case ID":"BE-020",
+    "Module":"Popup Selection Persistence",
+    "Title":"Save selected repairs\/items even without clicking Preview",
+    "Objectives":"Ensure user selections are preserved regardless of UI interaction order ",
+    "Preconditions":"Popup opened and items checked",
+    "Test_Steps":"1. Check items\n2. Click OK directly",
+    "Test_Data":null,
+    "Expected_Result":"Selections should still be returned",
+    "Priority":"High",
+    "Execution_Status":"Fail",
+    "Defect_ID":"BUG-003",
+    "Comments":"finish() returns preview textbox content, not current checkbox state"
+  }
+]
