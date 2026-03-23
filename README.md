@@ -18,4 +18,12 @@ This project includes structured test coverage across:
   <li>Regression Test Cases</li>
 </ul>
 
+See full test plan: [Test Plan](TEST_PLAN.md)
+
+Test Case Dashboard
+
+A web-based dashboard to visualize UI, Backend, and Regression test cases.
+
+[![Live Demo](https://img.shields.io/badge/Live-Demo-green)](https://vn9.github.io/Evaluation-Automation-Tool/)
+
 
