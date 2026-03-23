@@ -4,12 +4,120 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Test Cases</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f8f9fa;
+      margin: 0;
+    }
+
+    .page-container {
+      max-width: 1000px;
+      margin: 30px auto;
+      padding: 10px;
+    }
+
+    .table-container {
+      width: 100%;
+      overflow-x: auto;
+      margin-bottom: 40px; 
+      max-height: 500px;
+      overflow: auto;
+      border: 1px solid #ddd;
+      background: white;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      table-layout: auto;
+    }
+
+    th,
+    td {
+      border: 1px solid #ddd;
+      padding: 8px;
+      text-align: left;
+      vertical-align: top;
+      white-space: pre-wrap;
+      word-break: break-word;
+      overflow-wrap: anywhere;
+    }
+
+    th {
+      position: sticky;
+      top: 0;
+      background: #f2f2f2;
+      z-index: 2;font-weight: bold;
+    }
+
+    tr:nth-child(even) {
+      background: #fafafa;
+    }
+
+    tr:hover {
+      background: #f1f1f1;
+    }
+
+    h1 {
+      margin-bottom: 30px;
+    }
+
+    h2 {
+      margin-top: 40px;
+      margin-bottom: 12px;
+    }
+
+    /* Better widths for typical test case columns */
+    th:nth-child(1), td:nth-child(1) {
+      min-width: 100px;
+    }
+
+    th:nth-child(2), td:nth-child(2) {
+      min-width: 140px;
+    }
+
+    th:nth-child(3), td:nth-child(3) {
+      min-width: 260px;
+    }
+
+    th:nth-child(4), td:nth-child(4) {
+      min-width: 220px;
+    }
+
+    th:nth-child(5), td:nth-child(5) {
+      min-width: 320px;
+    }
+
+    th:nth-child(6), td:nth-child(6) {
+      min-width: 220px;
+    }
+
+    th:nth-child(7), td:nth-child(7) {
+      min-width: 220px;
+    }
+
+    th:nth-child(8), td:nth-child(8),
+    th:nth-child(9), td:nth-child(9),
+    th:nth-child(10), td:nth-child(10) {
+      min-width: 120px;
+    }
+
+    th:nth-child(11), td:nth-child(11),
+    th:nth-child(12), td:nth-child(12) {
+      min-width: 220px;
+    }
+  </style>
 </head>
 <body>
-  <h2>Test Case Dashboard</h2>
 
-  <div id="ui-table"></div>
-  <div id="backend-table"></div>
+  <div class="page-container">
+    <h1>Test Case Dashboard</h1>
+
+    <div id="ui-table"></div>
+    <div id="backend-table"></div>
+    <div id="regression-table"></div>
+  </div>
 
   <script src="app.js"></script>
 </body>
