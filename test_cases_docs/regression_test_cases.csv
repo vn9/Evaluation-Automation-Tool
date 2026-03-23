@@ -1,0 +1,35 @@
+﻿Test Case ID,Module,Title,Objectives,Preconditions,Test_Steps,Test_Data,Expected_Result,Priority,Execution_Status,Defect_ID,Comments
+RG-001,App Launch,Application starts successfully,,Required Python/runtime dependencies installed,1. Run main_eval_final.py,,Main window opens with title 'Fillable PDF Forms',Critical,Pass,,App() then mainloop()
+RG-002,Form Selection,Default form remains Evaluation,,Application opened,1. Launch app,,Evaluation radio is selected by default,High,Pass,,form_var default is Evaluation
+RG-003,Option Selection,Default processing mode remains Folder and PDF,,Application opened,1. Launch app,,Folder and PDF option is selected by default,High,Pass,,var_option default set
+RG-004,Repairs Toggle,Repairs controls enable when Yes is selected,,Application opened,1. Select Repairs = Yes,,Choose repair items and Copy Text buttons become enabled,High,Pass,,on_radio enables buttons
+RG-005,Repairs Toggle,Repairs controls clear and disable when No is selected,,Repairs text exists,1. Select Repairs = No,,Buttons disable and preview clears,High,Pass,,set_repairs_text('') called
+RG-006,Items Toggle,Items controls enable when Yes is selected,,Application opened,1. Select Items = Yes,,Choose items and Copy Text buttons become enabled,High,Pass,,on_radio enables buttons
+RG-007,Items Toggle,Items controls clear and disable when No is selected,,Items text exists,1. Select Items = No,,Buttons disable and preview clears,High,Pass,,set_items_text('') called
+RG-008,Repairs Popup,Repairs preview text displays selected repairs after Preview + OK,,Popup available,"1. Open Repairs popup
+2. Select values
+3. Click Preview
+4. Click OK",,Preview text is saved back to main window,High,Pass,,Works when Preview populated text first
+RG-009,Items Popup,Items preview text displays grouped selected items after Preview + OK,,Popup available,"1. Open Items popup
+2. Select values
+3. Click Preview
+4. Click OK",,Grouped text is saved back to main window,High,Pass,,Items popup grouped_preview True
+RG-010,Popup Save Flow,Popup OK works even without Preview,,Popup available,"1. Open popup
+2. Select values
+3. Click OK directly",,Selections should still be saved,Critical,Fail,BUG-003,Current implementation saves preview textbox content only
+RG-011,Copy Repairs,Copy repairs text clears state and resets controls,,Repairs preview has text,1. Click Copy Text in Repairs,,"Clipboard updated, radio resets to No, preview clears",Medium,Pass,,Implemented in copy_repairs_text
+RG-012,Copy Items,Copy items text clears state and resets controls,,Items preview has text,1. Click Copy Text in Items,,"Clipboard updated, radio resets to No, preview clears",Medium,Pass,,Implemented in copy_items_text
+RG-013,Extract Only Mode,Extract Data Only mode shows parsed output,,Valid data pasted,"1. Select Extract Data Only
+2. Click Processing Data",,Preview area shows parsed row(s),High,Pass,,preview_extracting writes to repairs_preview
+RG-014,Folder Only Mode,Folders Only mode creates folder without PDF generation,,Valid input and folder chosen,"1. Select Folders Only
+2. Click Processing Data",,Folder creation path is triggered,High,Pass,,process_pdf routes to create_folder only
+RG-015,PDF Only Mode,PDF Only mode generates PDF without folder creation,,Valid input and save folder chosen,"1. Select PDF Only
+2. Click Processing Data",,PDF generation path is triggered,High,Pass,,process_pdf routes to prepare_pdf only
+RG-016,Combined Mode,Folder and PDF mode triggers both actions,,Valid input and folders chosen,"1. Select Folder and PDF
+2. Click Processing Data",,create_folder() and prepare_pdf() are both invoked,High,Pass,,else branch calls both
+RG-017,Print Option,Print option still works after PDF save,,Valid PDF flow and print=yes,1. Generate PDF with print=yes,,PDF is sent to printer and status updated,Medium,Pass,,ShellExecute print branch present
+RG-018,QR Feature,Generated PDF still contains QR code after save,,Valid PDF flow,1. Generate PDF,,Saved PDF contains QR overlay,Critical,Fail,BUG-001,QR generation exists but integration is commented out
+RG-019,Multi-line Folder Flow,Multi-line input creates output for every row in folder mode,,Multiple valid rows pasted,"1. Select multiple rows
+2. Run Folders Only",,Folder created for each row,Critical,Fail,BUG-002,Only first row processed
+RG-020,Multi-line PDF Flow,Multi-line input creates output for every row in PDF mode,,Multiple valid rows pasted,"1. Select multiple rows
+2. Run PDF Only",,PDF created for each row,Critical,Fail,BUG-002,Only first row processed
