@@ -1,40 +1,46 @@
-// app.js
-// Expects these files in the same folder:
-// - ui_test.json
-// - backend_test.json
-//
-// Expects this HTML somewhere on the page:
-//
-// <h2>UI Test Cases</h2>
-// <div id="ui-table"></div>
-//
-// <h2>Backend Test Cases</h2>
-// <div id="backend-table"></div>
-
 document.addEventListener("DOMContentLoaded", async () => {
-  try {
-    const [uiData, backendData] = await Promise.all([
-      fetchJson("ui_test.json"),
-      fetchJson("backend_test.json")
-    ]);
-
-    renderTable("ui-table", "UI Test Cases", uiData.test_cases || []);
-    renderTable("backend-table", "Backend Test Cases", backendData.test_cases || []);
-  } catch (error) {
-    console.error("Failed to load test case files:", error);
-    showError("ui-table", "Could not load ui_test.json");
-    showError("backend-table", "Could not load backend_test.json");
-  }
+  await loadTables();
 });
+
+async function loadTables() {
+  await loadSingleTable({
+    fileName: "ui_test_cases.json",
+    containerId: "ui-table",
+    title: "UI Test Cases"
+  });
+
+  await loadSingleTable({
+    fileName: "backend_test_cases.json",
+    containerId: "backend-table",
+    title: "Backend Test Cases"
+  });
+
+  await loadSingleTable({
+    fileName: "regression_test_cases.json",
+    containerId: "regression-table",
+    title: "Regression Test Cases"
+  });
+}
+
+async function loadSingleTable({ fileName, containerId, title }) {
+  try {
+    const data = await fetchJson(fileName);
+    console.log(fileName, data);
+    renderTable(containerId, title, data);
+  } catch (error) {
+    console.error(`Failed to load ${fileName}:`, error);
+    showError(containerId, `Could not load ${fileName}. Check filename, path, and JSON format.`);
+  }
+}
 
 async function fetchJson(fileName) {
   const response = await fetch(fileName);
 
   if (!response.ok) {
-    throw new Error(`Failed to fetch ${fileName}: ${response.status} ${response.statusText}`);
+    throw new Error(`HTTP ${response.status} - ${response.statusText}`);
   }
 
-  return response.json();
+  return await response.json();
 }
 
 function renderTable(containerId, title, testCases) {
@@ -46,82 +52,57 @@ function renderTable(containerId, title, testCases) {
   }
 
   if (!Array.isArray(testCases) || testCases.length === 0) {
-    container.innerHTML = `<p>No data available for ${title}.</p>`;
+    container.innerHTML = `<h2>${title}</h2><p>No data found.</p>`;
     return;
   }
 
   const columns = getAllColumns(testCases);
 
-  const wrapper = document.createElement("div");
-  wrapper.style.overflowX = "auto";
-  wrapper.style.marginBottom = "24px";
+  let html = `<h2>${title}</h2>`;
+  html += `<div class="table-container">`;
+  html += `<table>`;
 
-  const heading = document.createElement("h3");
-  heading.textContent = title;
-  heading.style.marginBottom = "12px";
-
-  const table = document.createElement("table");
-  table.style.borderCollapse = "collapse";
-  table.style.width = "100%";
-  table.style.minWidth = "700px";
-
-  const thead = document.createElement("thead");
-  const headerRow = document.createElement("tr");
-
+  html += "<thead><tr>";
   columns.forEach((column) => {
-    const th = document.createElement("th");
-    th.textContent = formatHeader(column);
-    th.style.border = "1px solid #ccc";
-    th.style.padding = "10px";
-    th.style.textAlign = "left";
-    th.style.backgroundColor = "#f4f4f4";
-    headerRow.appendChild(th);
+    html += `<th>${formatHeader(column)}</th>`;
   });
+  html += "</tr></thead>";
 
-  thead.appendChild(headerRow);
-  table.appendChild(thead);
-
-  const tbody = document.createElement("tbody");
-
+  html += "<tbody>";
   testCases.forEach((testCase) => {
-    const row = document.createElement("tr");
+    html += "<tr>";
 
     columns.forEach((column) => {
-      const td = document.createElement("td");
-      td.style.border = "1px solid #ccc";
-      td.style.padding = "10px";
-      td.style.verticalAlign = "top";
-
       const value = testCase[column];
 
       if (Array.isArray(value)) {
-        td.innerHTML = value.map((item) => escapeHtml(String(item))).join("<br>");
-      } else if (value === undefined || value === null) {
-        td.textContent = "";
+        html += `<td>${value.map(item => escapeHtml(String(item))).join("<br>")}</td>`;
       } else {
-        td.textContent = String(value);
+        html += `<td>${escapeHtml(String(value ?? ""))}</td>`;
       }
-
-      row.appendChild(td);
     });
 
-    tbody.appendChild(row);
+    html += "</tr>";
   });
+  html += "</tbody></table></div>";
 
-  table.appendChild(tbody);
-  wrapper.appendChild(heading);
-  wrapper.appendChild(table);
-  container.appendChild(wrapper);
+  container.innerHTML = html;
 }
 
 function getAllColumns(items) {
   const preferredOrder = [
-    "id",
-    "scenario",
-    "input",
-    "steps",
-    "expected_result",
-    "priority"
+    "Test Case ID",
+    "Module",
+    "Title",
+    "Objectives",
+    "Preconditions",
+    "Test_Steps",
+    "Test_Data",
+    "Expected_Result",
+    "Priority",
+    "Execution_Status",
+    "Defect_ID",
+    "Comments"
   ];
 
   const foundColumns = new Set();
@@ -137,9 +118,7 @@ function getAllColumns(items) {
 }
 
 function formatHeader(key) {
-  return key
-    .replace(/_/g, " ")
-    .replace(/\b\w/g, (char) => char.toUpperCase());
+  return key.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
 }
 
 function showError(containerId, message) {
@@ -150,7 +129,10 @@ function showError(containerId, message) {
 }
 
 function escapeHtml(text) {
-  const div = document.createElement("div");
-  div.textContent = text;
-  return div.innerHTML;
+  return text
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
 }
