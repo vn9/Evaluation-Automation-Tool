@@ -11,4 +11,11 @@ The application allows users to:
   <li> Print the generated documents</li>
 </ul>
 
-Testing focused on UI behavior, business logic validation, and file generation functionality.
+This project includes structured test coverage across:
+<ul>
+  <li>UI Test Cases</li> 
+  <li>Backend Test Cases</li>
+  <li>Regression Test Cases</li>
+</ul>
+
+
