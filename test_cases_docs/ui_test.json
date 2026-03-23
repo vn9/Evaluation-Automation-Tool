@@ -1,187 +1,282 @@
-{
-  "test_cases": [
-    {
-      "id": "UI-001",
-      "scenario": "Application launches",
-      "steps": [
-        "Open application"
-      ],
-      "expected_result": "Main window appears without errors",
-      "priority": "High"
-    },
-    {
-      "id": "UI-002",
-      "scenario": "Form selection works",
-      "steps": [
-        "Toggle Evaluation / Final radio buttons"
-      ],
-      "expected_result": "Selected option updates correctly",
-      "priority": "Medium"
-    },
-    {
-      "id": "UI-003",
-      "scenario": "Repairs toggle enables controls",
-      "steps": [
-        "Select 'Yes' for repairs"
-      ],
-      "expected_result": "'Choose repair items' button enabled",
-      "priority": "High"
-    },
-    {
-      "id": "UI-004",
-      "scenario": "Repairs toggle disables controls",
-      "steps": [
-        "Switch repairs to 'No'"
-      ],
-      "expected_result": "Buttons disabled and preview cleared",
-      "priority": "High"
-    },
-    {
-      "id": "UI-005",
-      "scenario": "Items toggle enables controls",
-      "steps": [
-        "Select 'Yes' for items"
-      ],
-      "expected_result": "Items selection button enabled",
-      "priority": "Medium"
-    },
-    {
-      "id": "UI-006",
-      "scenario": "Repairs popup opens",
-      "steps": [
-        "Click 'Choose repair items'"
-      ],
-      "expected_result": "Repairs popup window appears",
-      "priority": "High"
-    },
-    {
-      "id": "UI-007",
-      "scenario": "Items popup opens",
-      "steps": [
-        "Click 'Choose items'"
-      ],
-      "expected_result": "Items popup window appears",
-      "priority": "High"
-    },
-    {
-      "id": "UI-008",
-      "scenario": "Repair preview works",
-      "steps": [
-        "Select items",
-        "Click Preview"
-      ],
-      "expected_result": "Selected repairs appear in preview text",
-      "priority": "Medium"
-    },
-    {
-      "id": "UI-009",
-      "scenario": "Items preview grouped output",
-      "steps": [
-        "Select items across categories"
-      ],
-      "expected_result": "Preview shows grouped items",
-      "priority": "Medium"
-    },
-    {
-      "id": "UI-010",
-      "scenario": "Popup OK saves selections",
-      "steps": [
-        "Select items",
-        "Click OK"
-      ],
-      "expected_result": "Preview text appears in main window",
-      "priority": "High"
-    },
-    {
-      "id": "UI-011",
-      "scenario": "Copy repairs text",
-      "steps": [
-        "Click Copy Text"
-      ],
-      "expected_result": "Text copied to clipboard and section resets",
-      "priority": "Medium"
-    },
-    {
-      "id": "UI-012",
-      "scenario": "Copy items text",
-      "steps": [
-        "Click Copy Text"
-      ],
-      "expected_result": "Items copied and preview cleared",
-      "priority": "Medium"
-    },
-    {
-      "id": "UI-013",
-      "scenario": "Empty input validation",
-      "steps": [
-        "Click Processing Data with empty textbox"
-      ],
-      "expected_result": "Warning message appears",
-      "priority": "High"
-    },
-    {
-      "id": "UI-014",
-      "scenario": "Extract Data Only option",
-      "steps": [
-        "Select Extract Data Only"
-      ],
-      "expected_result": "Preview shows extracted rows",
-      "priority": "Medium"
-    },
-    {
-      "id": "UI-015",
-      "scenario": "Multi-line extraction",
-      "steps": [
-        "Enable multi-line",
-        "Paste multiple rows"
-      ],
-      "expected_result": "All rows extracted correctly",
-      "priority": "Medium"
-    },
-    {
-      "id": "UI-016",
-      "scenario": "Folder creation",
-      "steps": [
-        "Select Folders Only"
-      ],
-      "expected_result": "Folder created with correct name",
-      "priority": "High"
-    },
-    {
-      "id": "UI-017",
-      "scenario": "PDF generation",
-      "steps": [
-        "Select PDF Only"
-      ],
-      "expected_result": "Filled PDF file created successfully",
-      "priority": "High"
-    },
-    {
-      "id": "UI-018",
-      "scenario": "Combined processing",
-      "steps": [
-        "Select Folder and PDF"
-      ],
-      "expected_result": "Both folder and PDF generated",
-      "priority": "High"
-    },
-    {
-      "id": "UI-019",
-      "scenario": "Print option",
-      "steps": [
-        "Enable print option"
-      ],
-      "expected_result": "Generated PDF is sent to printer",
-      "priority": "Medium"
-    },
-    {
-      "id": "UI-020",
-      "scenario": "Missing repairs warning",
-      "steps": [
-        "Repairs set to Yes but none selected"
-      ],
-      "expected_result": "Warning dialog appears",
-      "priority": "Medium"
-    }
-  ]
-}
+[
+  {
+    "Test Case ID":"UI-001",
+    "Module":"UI",
+    "Title":"Application launch",
+    "Objectives":"Verify app launches successfully and main window renders",
+    "Preconditions":"App packaged with required dependencies and PDF\/resource files available",
+    "Test_Steps":"1. Run main_eval_final.py\n2. Observe main window",
+    "Test_Data":null,
+    "Expected_Result":"Main window opens without crash | Window title is displayed correctly | Default form is set to Evaluation | Default processing option is set to Folder and PDF | Items and Repairs action buttons are disabled by default",
+    "Priority":"High",
+    "Execution_Status":"Pass",
+    "Defect_ID":null,
+    "Comments":"Smoke"
+  },
+  {
+    "Test Case ID":"UI-002",
+    "Module":"UI",
+    "Title":"Window icon load fallback",
+    "Objectives":"Verify missing\/invalid icon does not crash app",
+    "Preconditions":"processing.ico missing or invalid",
+    "Test_Steps":"1. Launch app without valid icon file",
+    "Test_Data":null,
+    "Expected_Result":"App still opens; console prints 'Could not load icon'",
+    "Priority":"Medium",
+    "Execution_Status":"Pass",
+    "Defect_ID":null,
+    "Comments":"Positive\/Recovery"
+  },
+  {
+    "Test Case ID":"UI-003",
+    "Module":"UI",
+    "Title":"Default form selection",
+    "Objectives":"Verify default selected form is Evaluation",
+    "Preconditions":"App launched",
+    "Test_Steps":"1. Observe form radio group",
+    "Test_Data":null,
+    "Expected_Result":"Evaluation is selected by default",
+    "Priority":"Medium",
+    "Execution_Status":"Pass",
+    "Defect_ID":null,
+    "Comments":"Positive"
+  },
+  {
+    "Test Case ID":"UI-004",
+    "Module":"UI",
+    "Title":"Default processing option",
+    "Objectives":"Verify default processing option is Folder and PDF",
+    "Preconditions":"App launched",
+    "Test_Steps":"1. Observe processing option radio group",
+    "Test_Data":null,
+    "Expected_Result":"Folder and PDF is selected by default",
+    "Priority":"Medium",
+    "Execution_Status":"Pass",
+    "Defect_ID":null,
+    "Comments":"Positive"
+  },
+  {
+    "Test Case ID":"UI-005",
+    "Module":"UI",
+    "Title":"Items radio toggle enablement",
+    "Objectives":"Verify Items popup buttons enable only when Items=Yes",
+    "Preconditions":"App launched",
+    "Test_Steps":"1. Set Items=No\n2. Observe buttons\n3. Set Items=Yes",
+    "Test_Data":null,
+    "Expected_Result":"Choose items and Copy Text buttons disabled for No and enabled for Yes",
+    "Priority":"High",
+    "Execution_Status":"Pass ",
+    "Defect_ID":null,
+    "Comments":"Functional"
+  },
+  {
+    "Test Case ID":"UI-006",
+    "Module":"UI",
+    "Title":"Repairs radio toggle enablement",
+    "Objectives":"Verify Repairs popup buttons enable only when Repairs=Yes",
+    "Preconditions":"App launched",
+    "Test_Steps":"1. Set Repairs=No\n2. Observe buttons\n3. Set Repairs=Yes",
+    "Test_Data":null,
+    "Expected_Result":"Choose repair items and Copy Text buttons disabled for No and enabled for Yes",
+    "Priority":"High",
+    "Execution_Status":"Pass",
+    "Defect_ID":null,
+    "Comments":"Functional"
+  },
+  {
+    "Test Case ID":"UI-007",
+    "Module":"UI",
+    "Title":"Items preview clearing on No",
+    "Objectives":"Verify Items preview is cleared when radio switched from Yes to No",
+    "Preconditions":"Items text already selected",
+    "Test_Steps":"1. Set Items=Yes and select items\n2. Switch Items=No",
+    "Test_Data":null,
+    "Expected_Result":"Items preview clears and buttons disable",
+    "Priority":"Medium",
+    "Execution_Status":"Pass",
+    "Defect_ID":null,
+    "Comments":"Functional"
+  },
+  {
+    "Test Case ID":"UI-008",
+    "Module":"UI",
+    "Title":"Repairs preview clearing on No",
+    "Objectives":"Verify Repairs preview is cleared when radio switched from Yes to No",
+    "Preconditions":"Repairs text already selected",
+    "Test_Steps":"1. Set Repairs=Yes and select repairs\n2. Switch Repairs=No",
+    "Test_Data":null,
+    "Expected_Result":"Repairs preview clears and buttons disable",
+    "Priority":"Medium",
+    "Execution_Status":"Pass",
+    "Defect_ID":null,
+    "Comments":"Functional"
+  },
+  {
+    "Test Case ID":"UI-009",
+    "Module":"UI",
+    "Title":"Items popup preview",
+    "Objectives":"Verify preview updates with grouped selected items",
+    "Preconditions":"Items popup opened",
+    "Test_Steps":"1. Select multiple items across categories\n2. Click Preview",
+    "Test_Data":null,
+    "Expected_Result":"Preview shows grouped lines by category",
+    "Priority":"Medium",
+    "Execution_Status":"Pass ",
+    "Defect_ID":null,
+    "Comments":"Functional"
+  },
+  {
+    "Test Case ID":"UI-010",
+    "Module":"UI",
+    "Title":"Repairs popup preview",
+    "Objectives":"Verify preview updates with ordered selected repairs",
+    "Preconditions":"Repairs popup opened",
+    "Test_Steps":"1. Select multiple repairs\n2. Click Preview",
+    "Test_Data":null,
+    "Expected_Result":"Preview shows numbered list ordered Replacement > Repair > Cosmetic",
+    "Priority":"Medium",
+    "Execution_Status":"Pass ",
+    "Defect_ID":null,
+    "Comments":"Functional"
+  },
+  {
+    "Test Case ID":"UI-011",
+    "Module":"UI",
+    "Title":"Copy items text flow",
+    "Objectives":"Verify Copy Text copies items text and resets Items section",
+    "Preconditions":"Items preview contains text",
+    "Test_Steps":"1. Click Ok in Items section",
+    "Test_Data":null,
+    "Expected_Result":"Items preview shows selected items",
+    "Priority":"High",
+    "Execution_Status":"Pass",
+    "Defect_ID":null,
+    "Comments":"Functional"
+  },
+  {
+    "Test Case ID":"UI-012",
+    "Module":"UI",
+    "Title":"Copy repairs text flow",
+    "Objectives":"Verify Copy Text copies repairs text and resets Repairs section",
+    "Preconditions":"Repairs preview contains text",
+    "Test_Steps":"1. Click Ok in Repairs section",
+    "Test_Data":null,
+    "Expected_Result":"Repairs preview shows selected repairs",
+    "Priority":"High",
+    "Execution_Status":"Pass ",
+    "Defect_ID":null,
+    "Comments":"Functional"
+  },
+  {
+    "Test Case ID":"UI-013",
+    "Module":"UI",
+    "Title":"Copy items when no text",
+    "Objectives":"Verify warning when copying empty Items preview",
+    "Preconditions":"Items preview empty",
+    "Test_Steps":"1. Click Copy Text",
+    "Test_Data":null,
+    "Expected_Result":"Text copied to clipboard; Items radio set to No; preview cleared; buttons disabled; info dialog shown",
+    "Priority":"Low",
+    "Execution_Status":"Pass ",
+    "Defect_ID":null,
+    "Comments":"Negative"
+  },
+  {
+    "Test Case ID":"UI-014",
+    "Module":"UI",
+    "Title":"Copy repairs when no text",
+    "Objectives":"Verify warning when copying empty Repairs preview",
+    "Preconditions":"Repairs preview empty",
+    "Test_Steps":"1. Click Copy Text",
+    "Test_Data":null,
+    "Expected_Result":"Text copied to clipboard; Repairs radio set to No; preview cleared; buttons disabled; info dialog shown",
+    "Priority":"Low",
+    "Execution_Status":"Pass ",
+    "Defect_ID":null,
+    "Comments":"Negative"
+  },
+  {
+    "Test Case ID":"UI-015",
+    "Module":"UI",
+    "Title":"Extract preview single-row mode",
+    "Objectives":"Verify Extract Data Only preview shows first extracted row when multi=No",
+    "Preconditions":"Textbox contains valid multi-line input",
+    "Test_Steps":"1. Keep Multi=No\n2. Select Extract Data Only\n3. Click Processing Data",
+    "Test_Data":null,
+    "Expected_Result":"Repairs preview shows only first formatted row as tab-delimited line",
+    "Priority":"Medium",
+    "Execution_Status":"Pass",
+    "Defect_ID":null,
+    "Comments":"Functional"
+  },
+  {
+    "Test Case ID":"UI-016",
+    "Module":"UI",
+    "Title":"Extract preview multi-row mode",
+    "Objectives":"Verify Extract Data Only preview shows all extracted rows when multi=Yes",
+    "Preconditions":"Textbox contains valid multi-line input",
+    "Test_Steps":"1. Set Multi=Yes\n2. Select Extract Data Only\n3. Click Processing Data",
+    "Test_Data":null,
+    "Expected_Result":"Repairs preview shows all extracted rows, one line per row",
+    "Priority":"Medium",
+    "Execution_Status":"Pass",
+    "Defect_ID":null,
+    "Comments":"Functional"
+  },
+  {
+    "Test Case ID":"UI-017",
+    "Module":"UI",
+    "Title":"Status bar default text",
+    "Objectives":"Verify initial status bar text",
+    "Preconditions":"App launched",
+    "Test_Steps":"1. Observe status bar",
+    "Test_Data":null,
+    "Expected_Result":"Status shows 'Looking for input file'",
+    "Priority":"Low",
+    "Execution_Status":"Pass",
+    "Defect_ID":null,
+    "Comments":"UI"
+  },
+  {
+    "Test Case ID":"UI-018",
+    "Module":"UI",
+    "Title":"Process button available",
+    "Objectives":"Verify Processing Data button is visible and clickable",
+    "Preconditions":"App launched",
+    "Test_Steps":"1. Observe bottom action button",
+    "Test_Data":null,
+    "Expected_Result":"Button is visible with label 'Processing Data'",
+    "Priority":"Low",
+    "Execution_Status":"Pass",
+    "Defect_ID":null,
+    "Comments":"Smoke"
+  },
+  {
+    "Test Case ID":"UI-019",
+    "Module":"UI",
+    "Title":"Print option default",
+    "Objectives":"Verify print option defaults to No",
+    "Preconditions":"App launched",
+    "Test_Steps":"1. Observe print radio group",
+    "Test_Data":null,
+    "Expected_Result":"No is selected by default",
+    "Priority":"Low",
+    "Execution_Status":"Pass",
+    "Defect_ID":null,
+    "Comments":"Positive"
+  },
+  {
+    "Test Case ID":"UI-020",
+    "Module":"UI",
+    "Title":"Long text in preview areas",
+    "Objectives":"Verify preview text boxes accept multiline content without truncating",
+    "Preconditions":"Long items\/repairs selections exist",
+    "Test_Steps":"1. Populate long content\n2. Observe preview areas",
+    "Test_Data":null,
+    "Expected_Result":"Content is displayed in multiline text box with wrapping",
+    "Priority":"Medium",
+    "Execution_Status":"Pass",
+    "Defect_ID":null,
+    "Comments":"Usability"
+  }
+]
