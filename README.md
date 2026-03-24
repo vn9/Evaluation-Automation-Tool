@@ -12,7 +12,7 @@ The application allows users to:
 </ul>
 
 <h4>Executable File</h4>
-<img src="./images/GUI.png" alt="gui" width="100"/>
+<img src="./images/execution_program.png" alt="gui" width="100"/>
 <h4>Launch App</h4>
 <img src="./images/GUI.png" alt="gui" width="450"/>
 <h4>Extractring Data</h4>
