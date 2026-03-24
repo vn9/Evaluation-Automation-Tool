@@ -47,8 +47,17 @@ A web-based dashboard to visualize UI, Backend, and Regression test cases.
 
 [![Live Demo](https://img.shields.io/badge/Live-Demo-green)](https://vn9.github.io/Evaluation-Automation-Tool/)
 
-# Install dependencies
+# Install Dependencies
 pip install -r requirements.txt
 
-# Run the application
+# Run the Application
 python main_eval_final.py
+
+# Building the Executable 
+1. Making spec file: 
+- pyi-makespec --onefile --noconsole --icon=processing.ico main_eval_final.py
+2. Edit the spec file with pdfs and icon for logo:
+- datas=[('ev7.pdf', '.'), ('preship5.pdf', '.'), ('processing.ico', '.')]
+- exe = EXE(.... icon='processing.ico')
+3. Save then run in command line:
+- pyinstaller main_eval_final.spec
