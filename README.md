@@ -97,8 +97,8 @@ Evaluation-specific image, extracted-note, and repair controls are not required 
 
 For Version 2 screenshots, detailed features, installation notes, and executable build instructions, see:
 
-[`tool_v2.0/README.md`](./tool_v2.0/README.md)
+[`tool_v2.0/README.md`](./tool_v2.0/README_v2.md)
 
 For information about the original version, see:
 
-[`tool_v1.0/README.md`](./tool_v1.0/README.md)
+[`tool_v1.0/README.md`](./tool_v1.0/README_v1.md)
