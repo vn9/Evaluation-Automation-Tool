@@ -1,0 +1,5 @@
+pywin32
+PyPDF2
+qrcode
+Pillow
+pytesseract
