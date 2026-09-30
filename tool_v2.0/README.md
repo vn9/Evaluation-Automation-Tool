@@ -159,7 +159,7 @@ python main_eval_final.py
 ### 1. Create a PyInstaller spec file
 
 ```bash
-pyi-makespec --onefile --noconsole --icon=processing.ico main_eval_final.py
+pyi-makespec --onefile --noconsole --icon=processing_v2.ico main_eval_final.py
 ```
 
 ### 2. Add the PDF templates and icon to the spec file
@@ -168,7 +168,8 @@ pyi-makespec --onefile --noconsole --icon=processing.ico main_eval_final.py
 datas=[
     ('ev7.pdf', '.'),
     ('preship5.pdf', '.'),
-    ('processing.ico', '.')
+    ('processing_v2.ico', '.'),
+    ('Tesseract-OCR', 'Tesseract-OCR')
 ]
 ```
 
@@ -177,7 +178,7 @@ Set the executable icon:
 ```python
 exe = EXE(
     ...,
-    icon='processing.ico'
+    icon='processing_v2.ico'
 )
 ```
 

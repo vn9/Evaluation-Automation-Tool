@@ -10,6 +10,66 @@ import win32api
 import utils
 
 
+# Repair descriptions the search box can offer, grouped by category and kept in
+# the priority order used by the Selected Repairs list.
+descriptions_by_category = {
+    "Replacement": [
+        "Lens",
+        "Cap",
+        "Array",
+        "Shaft Housing",
+        "Housing Strain Relief",
+        "Cable",
+        "Connector Strain Relief",
+        "Connector Housing",
+        "Connector Housing Label",
+        "Connector Knob",
+        "Connector Housing Frame",
+    ],
+    "Repair": [
+        "Lens",
+        "Lens Gap",
+        "Cap",
+        "Array",
+        "Shaft Housing Halves Splits",
+        "Housing Strain Relief",
+        "Cable Jacket",
+        "Connector Strain Relief",
+        "Leak",
+        "3D/4D",
+        "Electrical",
+    ],
+    "Cosmetic": [
+        "Shaft Housing",
+        "Housing Strain Relief",
+        "Connector Strain Relief",
+        "Connector Housing",
+        "Cable",
+    ],
+}
+
+# "Other" has no descriptions of its own. It only ever comes from the custom
+# repair entry, but it still shows up in the dropdown and in the repair list.
+other_category = "Other"
+
+repair_categories = tuple(descriptions_by_category) + (other_category,)
+
+# The two forms the user can work with.
+form_evaluation = "Evaluation"
+form_final = "Final"
+
+# The Yes/No answers read back by the logic further down this file.
+answer_yes = "yes"
+answer_no = "no"
+
+# The three ways Process can save the job.
+output_option_folder_and_pdf = "Folder and PDF"
+output_option_folders_only = "Folders Only"
+output_option_pdf_only = "PDF Only"
+
+output_options = (output_option_folder_and_pdf, output_option_folders_only, output_option_pdf_only)
+
+
 class App(tk.Tk):
     def __init__(self):
         super().__init__()
@@ -18,10 +78,8 @@ class App(tk.Tk):
         self.geometry("1280x650")
         self.minsize(1050, 600)
 
-        icon_path = utils.resource_path("processing.ico")
-
         try:
-            self.iconbitmap(icon_path)
+            self.iconbitmap(utils.resource_path("processing.ico"))
         except Exception as error:
             print(f"Could not load icon: {error}")
 
@@ -33,41 +91,18 @@ class App(tk.Tk):
         self.repairs_text = ""
         self.notes_text = ""
 
-        self.repair_options = [
-            ("Replacement", "Lens"),
-            ("Replacement", "Cap"),
-            ("Replacement", "Array"),
-            ("Replacement", "Shaft Housing"),
-            ("Replacement", "Housing Strain Relief"),
-            ("Replacement", "Cable"),
-            ("Replacement", "Connector Strain Relief"),
-            ("Replacement", "Connector Housing"),
-            ("Replacement", "Connector Housing Label"),
-            ("Replacement", "Connector Knob"),
-            ("Replacement", "Connector Housing Frame"),
+        # The search box needs one flat list of (category, description) pairs,
+        # so walk the descriptions_by_category table above and add one pair for
+        # every description.
+        self.repair_options = []
 
-            ("Repair", "Lens"),
-            ("Repair", "Lens Gap"),
-            ("Repair", "Cap"),
-            ("Repair", "Array"),
-            ("Repair", "Shaft Housing Halves Splits"),
-            ("Repair", "Housing Strain Relief"),
-            ("Repair", "Cable Jacket"),
-            ("Repair", "Connector Strain Relief"),
-            ("Repair", "Leak"),
-            ("Repair", "3D/4D"),
-            ("Repair", "Electrical"),
+        for category in descriptions_by_category:
+            for description in descriptions_by_category[category]:
+                self.repair_options.append((category, description))
 
-            ("Cosmetic", "Shaft Housing"),
-            ("Cosmetic", "Housing Strain Relief"),
-            ("Cosmetic", "Connector Strain Relief"),
-            ("Cosmetic", "Connector Housing"),
-            ("Cosmetic", "Cable"),
-        ]
-
-        # Keep this in the same order the fields appear on the evaluation form.
-        # Each entry is (OCR field name, output label): the form name is used
-        # for matching the comment row, the shorter label for the output.
+        # (OCR field name, output label), in the same order the fields appear on
+        # the evaluation form. The form name is matched against the OCR text,
+        # the shorter label is used for the output.
         self.comment_fields = [
             ("Lens", "Lens"),
             ("Cap", "Cap"),
@@ -98,16 +133,8 @@ class App(tk.Tk):
         self.update_form_state()
 
         # Ctrl+V pastes a screenshot when focus is not inside a text-entry control.
-        self.bind_all(
-            "<Control-v>",
-            self.handle_control_v,
-            add="+",
-        )
-
-        self.protocol(
-            "WM_DELETE_WINDOW",
-            self.close_app,
-        )
+        self.bind_all("<Control-v>", self.handle_control_v, add="+")
+        self.protocol("WM_DELETE_WINDOW", self.close_app)
 
     # ================================================================
     # Window layout
@@ -122,10 +149,7 @@ class App(tk.Tk):
 
         self.main_frame = ttk.Frame(canvas, padding=10)
 
-        self.main_frame.bind(
-            "<Configure>",
-            lambda event: canvas.configure(scrollregion=canvas.bbox("all")),
-        )
+        self.main_frame.bind("<Configure>", lambda event: canvas.configure(scrollregion=canvas.bbox("all")))
 
         canvas_window = canvas.create_window((0, 0), window=self.main_frame, anchor="nw")
 
@@ -151,6 +175,20 @@ class App(tk.Tk):
         button.pack(fill="x", pady=pady)
         return button
 
+    def add_radio_buttons(self, parent, variable, choices, command=None, start_column=0, padx=8):
+        """
+        Create one radio button per choice, side by side, and return them in
+        the same order. The shared variable holds the value of the picked one.
+        """
+        buttons = []
+
+        for offset, choice in enumerate(choices):
+            button = ttk.Radiobutton(parent, text=choice, value=choice, variable=variable, command=command)
+            button.grid(row=0, column=start_column + offset, sticky="w", padx=padx)
+            buttons.append(button)
+
+        return buttons
+
     # ================================================================
     # Form section
     # ================================================================
@@ -163,23 +201,11 @@ class App(tk.Tk):
             row=0, column=0, sticky="w"
         )
 
-        self.form_var = tk.StringVar(value="Evaluation")
+        self.form_var = tk.StringVar(value=form_evaluation)
 
-        ttk.Radiobutton(
-            frame,
-            text="Evaluation",
-            value="Evaluation",
-            variable=self.form_var,
-            command=self.update_form_state,
-        ).grid(row=0, column=1, padx=(25, 8))
-
-        ttk.Radiobutton(
-            frame,
-            text="Final",
-            value="Final",
-            variable=self.form_var,
-            command=self.update_form_state,
-        ).grid(row=0, column=2, padx=8)
+        self.add_radio_buttons(
+            frame, self.form_var, (form_evaluation, form_final), self.update_form_state, start_column=1
+        )
 
     # ================================================================
     # One-row workflow:
@@ -190,8 +216,8 @@ class App(tk.Tk):
         row = ttk.Frame(self.main_frame)
         row.grid(row=1, column=0, sticky="nsew", pady=(0, 8))
 
-        # Helpdesk and output get more width.
-        # Image list is intentionally smaller.
+        # The 5 / 3 / 5 split gives Helpdesk and output more width
+        # than the image list.
         row.columnconfigure(0, weight=5, uniform="workflow")
         row.columnconfigure(1, weight=3, uniform="workflow")
         row.columnconfigure(2, weight=5, uniform="workflow")
@@ -219,6 +245,7 @@ class App(tk.Tk):
         frame = ttk.LabelFrame(parent, text="Evaluation Images", padding=10)
         frame.grid(row=0, column=1, sticky="nsew", padx=5)
         self.image_panel = frame
+
         # Image list keeps most of the panel; the button column gets a firm share.
         frame.columnconfigure(0, weight=3)
         frame.columnconfigure(1, weight=2)
@@ -272,27 +299,13 @@ class App(tk.Tk):
         question = ttk.Frame(frame)
         question.grid(row=0, column=0, columnspan=3, sticky="w", pady=(0, 8))
 
-        ttk.Label(question, text="Do you need to fill in the repair part?").pack(side="left")
+        ttk.Label(question, text="Do you need to fill in the repair part?").grid(row=0, column=0, sticky="w")
 
-        self.rep_var = tk.StringVar(value="no")
+        self.rep_var = tk.StringVar(value=answer_no)
 
-        self.repair_yes_button = ttk.Radiobutton(
-            question,
-            text="Yes",
-            value="yes",
-            variable=self.rep_var,
-            command=self.update_repair_state,
+        self.repair_answer_buttons = self.add_radio_buttons(
+            question, self.rep_var, (answer_yes, answer_no), self.update_repair_state, start_column=1
         )
-        self.repair_yes_button.pack(side="left", padx=(18, 4))
-
-        self.repair_no_button = ttk.Radiobutton(
-            question,
-            text="No",
-            value="no",
-            variable=self.rep_var,
-            command=self.update_repair_state,
-        )
-        self.repair_no_button.pack(side="left")
 
         self.build_find_repairs_panel(frame)
         self.build_custom_repair_panel(frame)
@@ -306,7 +319,7 @@ class App(tk.Tk):
         self.repair_search_var = tk.StringVar()
         self.repair_search_var.trace_add("write", self.on_repair_search_changed)
 
-        # Small helper hint, only visible while the repair part is enabled.
+        # Shown only while the repair part is enabled.
         self.repair_search_hint = ttk.Label(frame, text="Search repairs below", foreground="#555555")
         self.repair_search_hint.grid(row=0, column=0, sticky="w", pady=(0, 3))
         self.repair_search_hint.grid_remove()
@@ -325,16 +338,10 @@ class App(tk.Tk):
         self.repair_search_entry.grid(row=0, column=0, sticky="ew", padx=2, pady=2)
 
         self.clear_search_button = ttk.Button(search_row, text="X", width=2, command=self.clear_repair_search)
-        self.clear_search_button.place(
-            in_=self.repair_search_entry,
-            relx=1.0,
-            rely=0.5,
-            anchor="e",
-            x=-4,
-        )
+        self.clear_search_button.place(in_=self.repair_search_entry, relx=1.0, rely=0.5, anchor="e", x=-4)
 
-        # Scrollable list of multiple-selectable repair results.
-        # Shown only while the user is searching, hidden otherwise.
+        # Scrollable list of multiple-selectable repair results,
+        # hidden until the user searches.
         self.repair_results_container = ttk.Frame(frame)
         self.repair_results_container.grid(row=2, column=0, sticky="nsew")
         self.repair_results_container.columnconfigure(0, weight=1)
@@ -342,9 +349,7 @@ class App(tk.Tk):
 
         self.repair_results_canvas = tk.Canvas(self.repair_results_container, height=120, highlightthickness=0)
         self.repair_results_scrollbar = ttk.Scrollbar(
-            self.repair_results_container,
-            orient="vertical",
-            command=self.repair_results_canvas.yview,
+            self.repair_results_container, orient="vertical", command=self.repair_results_canvas.yview
         )
 
         self.repair_results_frame = ttk.Frame(self.repair_results_canvas)
@@ -364,9 +369,8 @@ class App(tk.Tk):
         self.repair_results_canvas.bind("<Configure>", resize_results_inner)
         self.repair_results_canvas.configure(yscrollcommand=self.repair_results_scrollbar.set)
 
-        self.repair_results_canvas.bind("<MouseWheel>", self.on_results_mousewheel)
-        self.repair_results_frame.bind("<MouseWheel>", self.on_results_mousewheel)
-        self.repair_results_container.bind("<MouseWheel>", self.on_results_mousewheel)
+        for scroll_target in (self.repair_results_canvas, self.repair_results_frame, self.repair_results_container):
+            scroll_target.bind("<MouseWheel>", self.on_results_mousewheel)
 
         self.repair_results_canvas.grid(row=0, column=0, sticky="nsew")
         self.repair_results_scrollbar.grid(row=0, column=1, sticky="ns")
@@ -374,7 +378,7 @@ class App(tk.Tk):
         self.repair_check_vars = {}
         self.repair_checkbuttons = {}
 
-        # Small message shown when a search has no matches.
+        # Shown when a search has no matches.
         self.repair_no_match_label = ttk.Label(frame, text="No matching repairs")
         self.repair_no_match_label.grid(row=2, column=0, sticky="w")
         self.repair_no_match_label.grid_remove()
@@ -403,12 +407,12 @@ class App(tk.Tk):
 
         ttk.Label(self.custom_fields, text="Category").grid(row=0, column=0, sticky="w", pady=(6, 2))
 
-        self.custom_category_var = tk.StringVar(value="Replacement")
+        self.custom_category_var = tk.StringVar(value=repair_categories[0])
 
         self.custom_category_combo = ttk.Combobox(
             self.custom_fields,
             textvariable=self.custom_category_var,
-            values=["Replacement", "Repair", "Cosmetic", "Other"],
+            values=list(repair_categories),
             state="readonly",
         )
         self.custom_category_combo.grid(row=1, column=0, sticky="ew", pady=(2, 6))
@@ -421,7 +425,9 @@ class App(tk.Tk):
         self.custom_description_entry.grid(row=3, column=0, sticky="ew", pady=(2, 6))
         self.custom_description_entry.bind("<Return>", lambda event: self.add_custom_repair())
 
-        self.add_custom_button = ttk.Button(self.custom_fields, text="Add Custom Repair", command=self.add_custom_repair)
+        self.add_custom_button = ttk.Button(
+            self.custom_fields, text="Add Custom Repair", command=self.add_custom_repair
+        )
         self.add_custom_button.grid(row=4, column=0, sticky="w")
 
         # Start collapsed.
@@ -454,30 +460,20 @@ class App(tk.Tk):
         options = ttk.LabelFrame(frame, text="Output Options", padding=9)
         options.grid(row=0, column=0, sticky="ew", padx=(0, 10))
 
-        self.var_option = tk.StringVar(value="Folder and PDF")
+        self.var_option = tk.StringVar(value=output_option_folder_and_pdf)
 
-        ttk.Radiobutton(options, text="Folder and PDF", value="Folder and PDF", variable=self.var_option, command=self.update_print_option_state).grid(
-            row=0, column=0, sticky="w", padx=(0, 24)
-        )
-
-        ttk.Radiobutton(options, text="Folders Only", value="Folders Only", variable=self.var_option, command=self.update_print_option_state).grid(
-            row=0, column=1, sticky="w", padx=(0, 24)
-        )
-
-        ttk.Radiobutton(options, text="PDF Only", value="PDF Only", variable=self.var_option, command=self.update_print_option_state).grid(
-            row=0, column=2, sticky="w", padx=(0, 30)
+        self.output_option_buttons = self.add_radio_buttons(
+            options, self.var_option, output_options, self.update_print_option_state, padx=(0, 24)
         )
 
         ttk.Separator(options, orient="vertical").grid(row=0, column=3, sticky="ns", padx=(0, 30))
         ttk.Label(options, text="Print File:").grid(row=0, column=4, sticky="w", padx=(0, 8))
 
-        self.print_var = tk.StringVar(value="no")
+        self.print_var = tk.StringVar(value=answer_no)
 
-        self.print_yes_button = ttk.Radiobutton(options, text="Yes", value="yes", variable=self.print_var)
-        self.print_yes_button.grid(row=0, column=5, sticky="w", padx=(0, 8))
-
-        self.print_no_button = ttk.Radiobutton(options, text="No", value="no", variable=self.print_var)
-        self.print_no_button.grid(row=0, column=6, sticky="w")
+        self.print_buttons = self.add_radio_buttons(
+            options, self.print_var, (answer_yes, answer_no), start_column=5
+        )
 
         actions = ttk.Frame(frame)
         actions.grid(row=0, column=1, sticky="e")
@@ -494,18 +490,12 @@ class App(tk.Tk):
 
         self.update_print_option_state()
 
-    def update_print_option_state(self):
-        """
-        Printing only applies when a PDF is being generated.
-        For Folders Only, force Print File to No and disable both choices.
-        """
-        if self.var_option.get() == "Folders Only":
-            self.print_var.set("no")
-            self.print_yes_button.state(["disabled"])
-            self.print_no_button.state(["disabled"])
-        else:
-            self.print_yes_button.state(["!disabled"])
-            self.print_no_button.state(["!disabled"])
+    def set_widgets_enabled(self, widgets, enabled):
+        """Enable or disable a group of buttons and checkbuttons at once."""
+        state = "!disabled" if enabled else "disabled"
+
+        for widget in widgets:
+            widget.state([state])
 
     def set_textbox_enabled(self, widget, enabled):
         if enabled:
@@ -513,21 +503,34 @@ class App(tk.Tk):
         else:
             widget.configure(state="disabled", background="#f0f0f0")
 
+    def update_print_option_state(self):
+        """
+        Printing only applies when a PDF is being generated.
+        For Folders Only, force Print File to No and disable both choices.
+        """
+        folders_only = self.var_option.get() == output_option_folders_only
+
+        if folders_only:
+            self.print_var.set(answer_no)
+
+        self.set_widgets_enabled(self.print_buttons, not folders_only)
+
     def update_form_state(self):
-        evaluation_enabled = self.form_var.get() == "Evaluation"
-        button_state = "!disabled" if evaluation_enabled else "disabled"
+        # Only the Evaluation form has images, notes and repairs.
+        evaluation_enabled = self.form_var.get() == form_evaluation
 
         self.set_textbox_enabled(self.image_listbox, evaluation_enabled)
         self.set_textbox_enabled(self.output_textbox, evaluation_enabled)
 
-        for button in (
-            self.add_images_button,
-            self.paste_image_button,
-            self.extract_evaluation_button,
-            self.repair_yes_button,
-            self.repair_no_button,
-        ):
-            button.state([button_state])
+        self.set_widgets_enabled(
+            (
+                self.add_images_button,
+                self.paste_image_button,
+                self.extract_evaluation_button,
+                *self.repair_answer_buttons,
+            ),
+            evaluation_enabled,
+        )
 
         self.update_repair_state()
 
@@ -536,6 +539,7 @@ class App(tk.Tk):
     # ================================================================
 
     def clean_helpdesk_cell(self, value):
+        """Strip Helpdesk formatting: markdown links, bold markers, line breaks."""
         value = value.strip()
 
         link_match = re.fullmatch(r"\[(.*?)\]\((.*?)\)", value)
@@ -548,6 +552,27 @@ class App(tk.Tk):
 
         return value.strip()
 
+    def split_helpdesk_row(self, columns):
+        """
+        Turn one Helpdesk row into (Job, Customer, Model, Serial).
+
+        Returns None when the column count is not a shape we understand.
+        """
+        if len(columns) == 9:
+            return [columns[0], columns[4], columns[6], columns[8]]
+
+        if len(columns) == 4:
+            return columns
+
+        if len(columns) == 3:
+            # A 3-column row is missing either the Job or the Serial.
+            if not columns[0].isnumeric():
+                return ["", *columns]
+
+            return [*columns, ""]
+
+        return None
+
     def extract_data(self):
         text_content = self.input_textbox.get("1.0", tk.END)
 
@@ -559,13 +584,13 @@ class App(tk.Tk):
         errors = []
         row_number = 0
 
-        for raw_line in text_content.splitlines():
-            line = raw_line.rstrip("\r\n")
+        for line in text_content.splitlines():
             stripped_line = line.strip()
 
             if not stripped_line:
                 continue
 
+            # Skip the "|---|---|" separator row of a markdown table.
             if stripped_line.startswith("|") and re.fullmatch(r"[\s|:\-]+", stripped_line):
                 continue
 
@@ -573,22 +598,17 @@ class App(tk.Tk):
 
             if "\t" in line:
                 columns = [self.clean_helpdesk_cell(value) for value in line.split("\t")]
+
             elif stripped_line.startswith("|") and stripped_line.endswith("|"):
                 columns = [self.clean_helpdesk_cell(value) for value in stripped_line.strip("|").split("|")]
+
             else:
                 errors.append(f"Row {row_number} could not be recognized.")
                 continue
 
-            if len(columns) == 9:
-                row = [columns[0], columns[4], columns[6], columns[8]]
-            elif len(columns) == 4:
-                row = columns
-            elif len(columns) == 3:
-                if not columns[0].isnumeric():
-                    row = ["", *columns]
-                else:
-                    row = [*columns, ""]
-            else:
+            row = self.split_helpdesk_row(columns)
+
+            if row is None:
                 errors.append(f"Row {row_number} has the wrong number of columns.")
                 continue
 
@@ -693,25 +713,15 @@ class App(tk.Tk):
         except ImportError:
             messagebox.showerror(
                 "Missing Pillow",
-                "Pillow is required to paste screenshots.\n\n"
-                "Run:\n"
-                "python -m pip install Pillow",
+                "Pillow is required to paste screenshots.\n\nRun:\npython -m pip install Pillow",
             )
             return
 
         clipboard_content = ImageGrab.grabclipboard()
 
-        if clipboard_content is None:
-            messagebox.showwarning("No Image", "The clipboard does not contain an image.")
-            return
-
         # Windows can sometimes return a list of copied file paths.
         if isinstance(clipboard_content, list):
-            image_files = [
-                path
-                for path in clipboard_content
-                if self.is_supported_image_file(path)
-            ]
+            image_files = [path for path in clipboard_content if self.is_supported_image_file(path)]
 
             if not image_files:
                 messagebox.showwarning("No Image", "The clipboard does not contain a supported image.")
@@ -723,7 +733,7 @@ class App(tk.Tk):
             self.status.set(f"Added {len(image_files)} image(s) from clipboard.")
             return
 
-        if not hasattr(clipboard_content, "save"):
+        if clipboard_content is None or not hasattr(clipboard_content, "save"):
             messagebox.showwarning("No Image", "The clipboard does not contain an image.")
             return
 
@@ -796,17 +806,11 @@ class App(tk.Tk):
             return
 
         try:
-            combined_text = "\n".join(
-                self.read_evaluation_file(path)
-                for path in self.image_paths
-            )
-
+            combined_text = "\n".join(self.read_evaluation_file(path) for path in self.image_paths)
             notes = self.parse_comment_fields(combined_text)
 
             if not notes:
-                self.extracted_notes_text = ""
-                self.render_output()
-
+                self.clear_output()
                 messagebox.showwarning(
                     "No Comments Found",
                     "No populated Comment(s) fields were detected.\n\n"
@@ -831,10 +835,46 @@ class App(tk.Tk):
         return self.read_image_with_ocr(path)
 
     def set_tesseract_path(self, pytesseract):
+        # The Tesseract copy bundled with the app is used first, so OCR also
+        # works on computers where Tesseract is not installed system-wide.
+        bundled_path = utils.resource_path(r"Tesseract-OCR\tesseract.exe")
         common_path = r"C:\Program Files\Tesseract-OCR\tesseract.exe"
 
-        if os.path.exists(common_path):
+        if os.path.exists(bundled_path):
+            pytesseract.pytesseract.tesseract_cmd = bundled_path
+
+        elif os.path.exists(common_path):
             pytesseract.pytesseract.tesseract_cmd = common_path
+
+    def load_ocr_libraries(self, need_pdf=False):
+        """
+        Import the OCR libraries and point pytesseract at a Tesseract copy.
+
+        Returns (pytesseract, Image, ImageOps, fitz). fitz is PyMuPDF and is
+        only imported when need_pdf is True, so image OCR keeps working
+        without it.
+        """
+        try:
+            import pytesseract
+            from PIL import Image, ImageOps
+
+            fitz = None
+
+            if need_pdf:
+                import fitz
+
+        except ImportError as error:
+            if need_pdf:
+                title = "PDF OCR packages are missing."
+                packages = "PyMuPDF Pillow pytesseract"
+            else:
+                title = "OCR packages are missing."
+                packages = "Pillow pytesseract"
+
+            raise RuntimeError(f"{title}\n\nRun:\npython -m pip install {packages}") from error
+
+        self.set_tesseract_path(pytesseract)
+        return pytesseract, Image, ImageOps, fitz
 
     def ocr_text_from_image(self, image, pytesseract, imageops):
         """Shared grayscale -> autocontrast -> OCR preprocessing."""
@@ -842,44 +882,19 @@ class App(tk.Tk):
         return pytesseract.image_to_string(gray, config="--psm 6")
 
     def read_image_with_ocr(self, path):
-        try:
-            import pytesseract
-            from PIL import Image
-            from PIL import ImageOps
-
-        except ImportError as error:
-            raise RuntimeError(
-                "OCR packages are missing.\n\n"
-                "Run:\n"
-                "python -m pip install Pillow pytesseract"
-            ) from error
-
-        self.set_tesseract_path(pytesseract)
-        return self.ocr_text_from_image(Image.open(path), pytesseract, ImageOps)
+        pytesseract, image_module, image_ops, _ = self.load_ocr_libraries()
+        return self.ocr_text_from_image(image_module.open(path), pytesseract, image_ops)
 
     def read_pdf_with_ocr(self, path):
-        try:
-            import fitz
-            import pytesseract
-            from PIL import Image
-            from PIL import ImageOps
-
-        except ImportError as error:
-            raise RuntimeError(
-                "PDF OCR packages are missing.\n\n"
-                "Run:\n"
-                "python -m pip install PyMuPDF Pillow pytesseract"
-            ) from error
-
-        self.set_tesseract_path(pytesseract)
+        pytesseract, image_module, image_ops, fitz = self.load_ocr_libraries(need_pdf=True)
 
         document = fitz.open(path)
         text_parts = []
 
         for page in document:
             pixmap = page.get_pixmap(matrix=fitz.Matrix(2, 2), alpha=False)
-            image = Image.frombytes("RGB", [pixmap.width, pixmap.height], pixmap.samples)
-            text_parts.append(self.ocr_text_from_image(image, pytesseract, ImageOps))
+            image = image_module.frombytes("RGB", [pixmap.width, pixmap.height], pixmap.samples)
+            text_parts.append(self.ocr_text_from_image(image, pytesseract, image_ops))
 
         document.close()
 
@@ -891,7 +906,6 @@ class App(tk.Tk):
 
     def parse_comment_fields(self, text):
         lines = [line.strip() for line in text.splitlines() if line.strip()]
-
         results = []
 
         # Use form order so the output matches the form.
@@ -901,9 +915,8 @@ class App(tk.Tk):
             if not comment_lines:
                 continue
 
-            # Multiple lines inside one comment box are joined by a comma.
-            comment_text = ", ".join(comment_lines)
-            results.append(f"{label}: {comment_text}")
+            # Multiple lines inside one comment box are joined with a comma.
+            results.append(f"{label}: {', '.join(comment_lines)}")
 
         return "\n".join(results)
 
@@ -912,10 +925,7 @@ class App(tk.Tk):
         Find the exact Comment(s) row and collect text that belongs
         to that comment box until another known form field starts.
         """
-        comment_pattern = re.compile(
-            rf"^{re.escape(field)}\s+comment(?:\(s\))?\s*:?\s*(.*)$",
-            flags=re.IGNORECASE,
-        )
+        comment_pattern = re.compile(rf"^{re.escape(field)}\s+comment(?:\(s\))?\s*:?\s*(.*)$", flags=re.IGNORECASE)
 
         for index, line in enumerate(lines):
             match = comment_pattern.match(line)
@@ -929,9 +939,7 @@ class App(tk.Tk):
             if self.is_valid_comment_text(same_line_value):
                 comment_lines.append(same_line_value)
 
-            for next_index in range(index + 1, len(lines)):
-                next_line = lines[next_index].strip()
-
+            for next_line in lines[index + 1:]:
                 if self.is_form_field_line(next_line):
                     break
 
@@ -946,13 +954,7 @@ class App(tk.Tk):
         if not value:
             return False
 
-        ignored_values = {
-            "(s)",
-            "s",
-            ":",
-            "n/a",
-            "pass",
-            "fail",
+        ignored_values = {"(s)","s",":","n/a","pass","fail",
         }
 
         if value.lower() in ignored_values:
@@ -965,14 +967,7 @@ class App(tk.Tk):
         return True
 
     def is_form_field_line(self, line):
-        line = line.strip()
-
-        if not line:
-            return False
-
-        # Exact field matching (longest first) prevents "Connector" from
-        # stealing "Connector Strain Relief".
-        return any(pattern.match(line) for pattern in self.comment_field_patterns)
+        return any(pattern.match(line.strip()) for pattern in self.comment_field_patterns)
 
     # ================================================================
     # Extracted output
@@ -986,7 +981,7 @@ class App(tk.Tk):
 
     def clear_output(self):
         self.extracted_notes_text = ""
-        self.output_textbox.delete("1.0", "end")
+        self.render_output()
 
     def get_notes_from_output(self):
         text = self.output_textbox.get("1.0", "end").strip()
@@ -1008,43 +1003,44 @@ class App(tk.Tk):
     def on_repair_search_changed(self, *args):
         self.refresh_repair_matches()
 
-    def refresh_repair_matches(self):
-        if not hasattr(self, "repair_results_frame"):
-            return
-
-        query = self.repair_search_var.get().strip().lower()
+    def find_matching_repairs(self, query):
+        """Return repairs like "Replacement: Lens" that contain every search word."""
         words = query.split()
-
-        # No search yet: hide the result area so the column stays compact.
-        if not query:
-            for child in self.repair_results_frame.winfo_children():
-                child.destroy()
-
-            self.repair_check_vars = {}
-            self.repair_checkbuttons = {}
-            self.repair_results_container.grid_remove()
-            self.repair_no_match_label.grid_remove()
-            return
-
         matches = []
 
         for category, description in self.repair_options:
             searchable_text = f"{category} {description}".lower()
 
             if all(word in searchable_text for word in words):
-                matches.append((category, description))
+                matches.append(f"{category}: {description}")
 
-        # Rebuild the checkboxes for the current matches.
+        return matches
+
+    def clear_repair_checkboxes(self):
+        """Remove the checkboxes currently shown in the results list."""
         for child in self.repair_results_frame.winfo_children():
             child.destroy()
 
         self.repair_check_vars = {}
         self.repair_checkbuttons = {}
 
-        enabled = self.form_var.get() == "Evaluation" and self.rep_var.get() == "yes"
+    def refresh_repair_matches(self):
+        if not hasattr(self, "repair_results_frame"):
+            return
 
-        for category, description in matches:
-            repair_text = f"{category}: {description}"
+        query = self.repair_search_var.get().strip().lower()
+        self.clear_repair_checkboxes()
+
+        # No search yet: hide the result area so the column stays compact.
+        if not query:
+            self.repair_results_container.grid_remove()
+            self.repair_no_match_label.grid_remove()
+            return
+
+        matches = self.find_matching_repairs(query)
+        enabled = self.form_var.get() == form_evaluation and self.rep_var.get() == answer_yes
+
+        for repair_text in matches:
             check_variable = tk.BooleanVar()
 
             # A visible checkbox that is already selected stays checked.
@@ -1065,7 +1061,6 @@ class App(tk.Tk):
             self.repair_check_vars[repair_text] = check_variable
             self.repair_checkbuttons[repair_text] = checkbutton
 
-        # Show the results when matches exist, otherwise show a small message.
         if matches:
             self.repair_no_match_label.grid_remove()
             self.repair_results_container.grid()
@@ -1087,7 +1082,6 @@ class App(tk.Tk):
     def add_repair(self, category, description):
         repair_text = f"{category}: {description}"
 
-        # Never add the same repair twice.
         if repair_text in self.selected_repairs:
             return False
 
@@ -1103,12 +1097,10 @@ class App(tk.Tk):
         self.refresh_selected_repairs()
 
     def clear_repair_search(self):
-        # Clearing the search text hides the result list again.
         self.repair_search_var.set("")
         self.repair_search_entry.focus_set()
 
     def on_custom_repair_toggled(self):
-        # Show or hide the custom repair fields without touching Selected Repairs.
         if self.custom_toggle_var.get():
             self.custom_fields.grid()
         else:
@@ -1121,7 +1113,7 @@ class App(tk.Tk):
             messagebox.showwarning("Missing Description", "Enter a custom repair description.")
             return
 
-        category = self.custom_category_var.get().strip() or "Other"
+        category = self.custom_category_var.get().strip() or other_category
 
         self.add_repair(category, description)
         self.custom_description_var.set("")
@@ -1153,22 +1145,17 @@ class App(tk.Tk):
 
         lines = []
         self.listbox_repair_by_index = {}
-        repair_number = 1
 
         # One compact numbered line per repair, grouped by priority:
         # Replacement, Repair, Cosmetic, Other. Within each category
         # the original selection order is kept.
-        for category in ["Replacement", "Repair", "Cosmetic", "Other"]:
-            category_repairs = [
-                repair_text
-                for repair_text in self.selected_repairs
-                if repair_text.startswith(f"{category}: ")
-            ]
+        for category in repair_categories:
+            for repair_text in self.selected_repairs:
+                if not repair_text.startswith(f"{category}: "):
+                    continue
 
-            for repair_text in category_repairs:
-                lines.append(f"{repair_number}. {repair_text}")
-                self.listbox_repair_by_index[len(lines) - 1] = repair_text
-                repair_number += 1
+                self.listbox_repair_by_index[len(lines)] = repair_text
+                lines.append(f"{len(lines) + 1}. {repair_text}")
 
         for line in lines:
             self.selected_repairs_listbox.insert("end", line)
@@ -1183,20 +1170,14 @@ class App(tk.Tk):
         if not hasattr(self, "repair_search_entry"):
             return
 
-        evaluation_enabled = self.form_var.get() == "Evaluation"
-        enabled = evaluation_enabled and self.rep_var.get() == "yes"
+        enabled = self.form_var.get() == form_evaluation and self.rep_var.get() == answer_yes
 
         entry_state = "normal" if enabled else "disabled"
-        combo_state = "readonly" if enabled else "disabled"
-        button_state = "!disabled" if enabled else "disabled"
 
-        for widget in (
-            self.repair_search_entry,
-            self.custom_description_entry,
-        ):
+        for widget in (self.repair_search_entry, self.custom_description_entry):
             widget.configure(state=entry_state)
 
-        self.custom_category_combo.configure(state=combo_state)
+        self.custom_category_combo.configure(state="readonly" if enabled else "disabled")
         self.set_textbox_enabled(self.selected_repairs_listbox, enabled)
 
         # Make the repair search stand out when the repair part is enabled.
@@ -1207,24 +1188,23 @@ class App(tk.Tk):
             self.repair_search_well.configure(highlightbackground="#bdbdbd")
             self.repair_search_hint.grid_remove()
 
-        for checkbutton in self.repair_checkbuttons.values():
-            checkbutton.state([button_state])
-
-        self.custom_toggle.state([button_state])
-
-        for button in (
-            self.add_custom_button,
-            self.remove_repair_button,
-            self.clear_search_button,
-        ):
-            button.state([button_state])
+        self.set_widgets_enabled(self.repair_checkbuttons.values(), enabled)
+        self.set_widgets_enabled(
+            (
+                self.custom_toggle,
+                self.add_custom_button,
+                self.remove_repair_button,
+                self.clear_search_button,
+            ),
+            enabled,
+        )
 
     # ================================================================
     # Folder creation
     # ================================================================
 
     def get_folder_suffix(self):
-        return "F" if self.form_var.get() == "Final" else "E"
+        return "F" if self.form_var.get() == form_final else "E"
 
     def make_folder_name(self, row):
         job, customer, model, serial = row
@@ -1232,18 +1212,27 @@ class App(tk.Tk):
 
         return f"{job}-{model} {serial} (#{job}{suffix}-{customer})"
 
-    def create_folders_for_all_rows(self):
-        """
-        Folders Only mode:
-        if the Helpdesk box contains 5 valid rows,
-        create 5 folders under one selected destination.
-        """
+    def choose_output_folder(self, title):
+        """Return the chosen destination folder and the Helpdesk rows, or (None, []) to stop."""
         rows = self.extract_data()
 
         if not rows:
-            return []
+            return None, []
 
-        output_path = filedialog.askdirectory(title="Select Folder to Save New Folders")
+        output_path = filedialog.askdirectory(title=title)
+
+        if not output_path:
+            return None, []
+
+        return output_path, rows
+
+    def create_folders_for_all_rows(self):
+        """
+        Folders Only mode:
+        if the Helpdesk box contains valid rows,
+        create one folder per row under one selected destination.
+        """
+        output_path, rows = self.choose_output_folder("Select Folder to Save New Folders")
 
         if not output_path:
             return []
@@ -1270,12 +1259,7 @@ class App(tk.Tk):
         Folder and PDF mode keeps the old behavior:
         create the folder for the first Helpdesk row.
         """
-        rows = self.extract_data()
-
-        if not rows:
-            return ""
-
-        output_path = filedialog.askdirectory(title="Select Folder to Save New Folder")
+        output_path, rows = self.choose_output_folder("Select Folder to Save New Folder")
 
         if not output_path:
             return ""
@@ -1299,9 +1283,42 @@ class App(tk.Tk):
     # PDF creation
     # ================================================================
 
-    def prepare_pdf(self):
-        original_file = "preship5.pdf" if self.form_var.get() == "Final" else "ev7.pdf"
+    def confirm_empty_repairs(self, is_final):
+        """Ask before writing a blank Required Repairs field."""
+        if is_final or self.rep_var.get() != answer_yes or self.repairs_text.strip():
+            return True
 
+        return messagebox.askyesno(
+            "No Repairs Selected",
+            "You chose Yes for repairs, but no repairs are selected.\n\n"
+            "Continue with an empty Required Repairs field?",
+        )
+
+    def build_pdf_field_values(self, row, is_final):
+        """Collect the info, repair and notes text that goes into the PDF."""
+        # PDF keeps the original behavior:
+        # use the first Helpdesk row for the PDF top information box.
+        self.info_text = self.format_pdf_info(row)
+
+        # Final processing ignores evaluation notes and repairs,
+        # even when those panels still hold data from Evaluation mode.
+        if is_final:
+            self.notes_text = ""
+        else:
+            self.notes_text = self.get_notes_from_output()
+
+        # Repairs are only written when the user asked for the repair part.
+        repairs_text = self.repairs_text if self.rep_var.get() == answer_yes else ""
+
+        return {
+            utils.pdf_info_field: self.info_text,
+            utils.pdf_repairs_field: "" if is_final else repairs_text,
+            utils.pdf_notes_field: self.notes_text,
+        }
+
+    def prepare_pdf(self):
+        is_final = self.form_var.get() == form_final
+        original_file = "preship5.pdf" if is_final else "ev7.pdf"
         source_pdf = utils.resource_path(original_file)
 
         if not os.path.exists(source_pdf):
@@ -1313,34 +1330,10 @@ class App(tk.Tk):
         if not rows:
             return ""
 
-        is_final = self.form_var.get() == "Final"
+        data = self.build_pdf_field_values(rows[0], is_final)
 
-        # PDF keeps the original behavior:
-        # use the first Helpdesk row for the PDF top information box.
-        self.info_text = self.format_pdf_info(rows[0])
-
-        # Final processing ignores evaluation notes and repairs,
-        # even when those panels still hold data from Evaluation mode.
-        if is_final:
-            self.notes_text = ""
-        else:
-            self.notes_text = self.get_notes_from_output()
-
-        if not is_final and self.rep_var.get() == "yes" and not self.repairs_text.strip():
-            continue_without_repairs = messagebox.askyesno(
-                "No Repairs Selected",
-                "You chose Yes for repairs, but no repairs are selected.\n\n"
-                "Continue with an empty Required Repairs field?",
-            )
-
-            if not continue_without_repairs:
-                return ""
-
-        data = {
-            utils.pdf_info_field: self.info_text,
-            utils.pdf_repairs_field: "" if is_final or self.rep_var.get() != "yes" else self.repairs_text,
-            utils.pdf_notes_field: self.notes_text,
-        }
+        if not self.confirm_empty_repairs(is_final):
+            return ""
 
         try:
             writer = utils.fill_pdf_fields(source_pdf, data)
@@ -1373,15 +1366,14 @@ class App(tk.Tk):
     def process_data(self):
         option = self.var_option.get()
 
-        if option == "Folders Only":
+        if option == output_option_folders_only:
             self.create_folders_for_all_rows()
             return
 
-        if option == "PDF Only":
+        if option == output_option_pdf_only:
             self.print_pdf_if_requested(self.prepare_pdf())
             return
 
-        # Folder and PDF keeps the existing first-row PDF workflow.
         folder_path = self.create_first_folder()
 
         if not folder_path:
@@ -1390,15 +1382,15 @@ class App(tk.Tk):
         self.print_pdf_if_requested(self.prepare_pdf())
 
     def print_pdf_if_requested(self, pdf_path):
-        if pdf_path and self.print_var.get() == "yes":
+        if pdf_path and self.print_var.get() == answer_yes:
             self.print_pdf(pdf_path)
 
     def clear_all(self):
         """Reset the current job only. Saved folders and PDFs are never touched."""
         # A disabled Text/Listbox silently ignores delete, so bring the
         # panels back to Evaluation first and reset the choices afterwards.
-        self.form_var.set("Evaluation")
-        self.rep_var.set("yes")
+        self.form_var.set(form_evaluation)
+        self.rep_var.set(answer_yes)
         self.update_form_state()
 
         self.input_textbox.delete("1.0", tk.END)
@@ -1406,14 +1398,14 @@ class App(tk.Tk):
         self.clear_output()
         self.clear_repairs()
 
-        self.custom_category_var.set("Replacement")
+        self.custom_category_var.set(repair_categories[0])
         self.custom_description_var.set("")
         self.custom_toggle_var.set(False)
         self.on_custom_repair_toggled()
 
-        self.var_option.set("Folder and PDF")
-        self.print_var.set("no")
-        self.rep_var.set("no")
+        self.var_option.set(output_option_folder_and_pdf)
+        self.print_var.set(answer_no)
+        self.rep_var.set(answer_no)
 
         self.info_text = ""
         self.notes_text = ""
@@ -1454,8 +1446,3 @@ class App(tk.Tk):
             self.delete_temporary_image(path)
 
         self.destroy()
-
-
-if __name__ == "__main__":
-    app = App()
-    app.mainloop()
