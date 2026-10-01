@@ -1,4 +1,4 @@
-from gui import App
+from gui_v2 import App
 
 
 if __name__ == "__main__":
