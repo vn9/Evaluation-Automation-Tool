@@ -11,6 +11,8 @@ from tkinter import filedialog, messagebox, ttk
 import win32api
 
 import utils_v3
+from image_folder_organizer import ImageFolderOrganizerFrame
+from pdf_to_img import PDFToImageFrame
 
 # Repair descriptions the search box can offer, grouped by category and kept in
 # the priority order used by the Selected Repairs list.
@@ -65,12 +67,20 @@ class App(tk.Tk):
     def __init__(self):
         super().__init__()
 
-        self.title("Fillable PDF Forms")
-        self.geometry("1280x650")
+        self.title("Processing Tools")
+        self.geometry("1280x720")
         self.minsize(1050, 600)
 
+        style = ttk.Style(self)
+
+        style.configure(
+            "TNotebook.Tab",
+            padding=(50, 12),
+            font=("Segoe UI", 12)
+        )
+
         try:
-            self.iconbitmap(utils_v2.resource_path("processing_v2.ico"))
+            self.iconbitmap(utils_v3.resource_path("processing_v3.ico"))
         except Exception as error:
             print(f"Could not load icon: {error}")
 
@@ -201,8 +211,19 @@ class App(tk.Tk):
     # ================================================================
 
     def build_window(self):
+        self.notebook = ttk.Notebook(self)
+        self.notebook.pack(fill="both", expand=True)
+
+        self.processing_tab = ttk.Frame(self.notebook)
+        self.pdf_tab = ttk.Frame(self.notebook)
+        self.organizer_tab = ttk.Frame(self.notebook)
+
+        self.notebook.add(self.processing_tab, text="Main Processing")
+        self.notebook.add(self.pdf_tab, text="PDF → Images")
+        self.notebook.add(self.organizer_tab, text="Organize Files")
+
         outer, canvas, scrollbar, self.main_frame = self.add_scrolling_frame(
-            self, frame_options={"padding": 10}
+            self.processing_tab, frame_options={"padding": 10}
         )
 
         outer.pack(fill="both", expand=True)
@@ -215,6 +236,12 @@ class App(tk.Tk):
         self.build_workflow_row()
         self.build_repairs_section()
         self.build_bottom_section()
+
+        self.pdf_converter = PDFToImageFrame(self.pdf_tab)
+        self.pdf_converter.pack(fill="both", expand=True)
+
+        self.folder_organizer = ImageFolderOrganizerFrame(self.organizer_tab)
+        self.folder_organizer.pack(fill="both", expand=True)
 
     def build_form_section(self):
         frame = ttk.LabelFrame(self.main_frame, text="Form", padding=10)
@@ -470,6 +497,9 @@ class App(tk.Tk):
         self.remove_repair_button = self.add_button(
             buttons, "Remove", self.remove_selected_repair, 14, 6
         )
+        self.copy_repairs_button = self.add_button(
+            buttons, "Copy", self.copy_repairs, 14, 0
+        )
 
         self.listbox_repair_by_index = {}
 
@@ -687,6 +717,10 @@ class App(tk.Tk):
     # ================================================================
 
     def handle_control_v(self, event=None):
+        # Clipboard-image paste belongs only to the Main Processing tab.
+        if self.notebook.select() != str(self.processing_tab):
+            return None
+
         focused_widget = self.focus_get()
 
         if focused_widget is None:
@@ -847,10 +881,10 @@ class App(tk.Tk):
 
     def set_tesseract_path(self, pytesseract):
         """Prefer the bundled Tesseract, then a standard install."""
-        bundled_path = utils_v2.resource_path(
+        bundled_path = utils_v3.resource_path(
             os.path.join("Tesseract-OCR", "tesseract.exe")
         )
-        bundled_tessdata = utils_v2.resource_path(
+        bundled_tessdata = utils_v3.resource_path(
             os.path.join("Tesseract-OCR", "tessdata")
         )
         common_paths = [
@@ -883,10 +917,10 @@ class App(tk.Tk):
 
             from PIL import Image, ImageOps
 
-            fitz = None
+            pymupdf = None
 
             if need_pdf:
-                import fitz
+                import pymupdf
 
         except ImportError as error:
             if need_pdf:
@@ -902,7 +936,7 @@ class App(tk.Tk):
 
         self.set_tesseract_path(pytesseract)
 
-        return pytesseract, Image, ImageOps, fitz
+        return pytesseract, Image, ImageOps, pymupdf
 
     def ocr_text_from_image(self, image, pytesseract, imageops):
         gray = imageops.grayscale(image)
@@ -917,16 +951,16 @@ class App(tk.Tk):
             return self.ocr_text_from_image(image, pytesseract, image_ops)
 
     def read_pdf_with_ocr(self, path):
-        pytesseract, image_module, image_ops, fitz = self.load_ocr_libraries(
+        pytesseract, image_module, image_ops, pymupdf = self.load_ocr_libraries(
             need_pdf=True
         )
 
-        document = fitz.open(path)
+        document = pymupdf.open(path)
         text_parts = []
 
         try:
             for page in document:
-                pixmap = page.get_pixmap(matrix=fitz.Matrix(2, 2), alpha=False)
+                pixmap = page.get_pixmap(matrix=pymupdf.Matrix(2, 2), alpha=False)
                 image = image_module.frombytes(
                     "RGB", [pixmap.width, pixmap.height], pixmap.samples
                 )
@@ -1275,6 +1309,14 @@ class App(tk.Tk):
 
         self.remove_repair(repair_text)
 
+    def copy_repairs(self):
+        if not self.repairs_text:
+            return
+
+        self.clipboard_clear()
+        self.clipboard_append(self.repairs_text)
+        self.status.set("Selected repairs copied.")
+
     def clear_repairs(self):
         self.selected_repairs.clear()
         self.refresh_selected_repairs()
@@ -1336,6 +1378,7 @@ class App(tk.Tk):
                 self.custom_toggle,
                 self.add_custom_button,
                 self.remove_repair_button,
+                self.copy_repairs_button,
                 self.clear_search_button,
             ),
             enabled,
@@ -1446,15 +1489,15 @@ class App(tk.Tk):
         repairs_text = self.repairs_text if self.rep_var.get() == answer_yes else ""
 
         return {
-            utils_v2.pdf_info_field: self.info_text,
-            utils_v2.pdf_repairs_field: "" if is_final else repairs_text,
-            utils_v2.pdf_notes_field: self.notes_text,
+            utils_v3.pdf_info_field: self.info_text,
+            utils_v3.pdf_repairs_field: "" if is_final else repairs_text,
+            utils_v3.pdf_notes_field: self.notes_text,
         }
 
     def prepare_pdf(self):
         is_final = self.form_var.get() == form_final
         original_file = "preship5.pdf" if is_final else "ev7.pdf"
-        source_pdf = utils_v2.resource_path(original_file)
+        source_pdf = utils_v3.resource_path(original_file)
 
         if not os.path.exists(source_pdf):
             messagebox.showerror("Missing File", f"Input PDF not found:\n{source_pdf}")
@@ -1471,7 +1514,7 @@ class App(tk.Tk):
             return ""
 
         try:
-            writer = utils_v2.fill_pdf_fields(source_pdf, data)
+            writer = utils_v3.fill_pdf_fields(source_pdf, data)
             output_folder = filedialog.askdirectory(title="Select Folder to Save PDF")
 
             if not output_folder:
@@ -1579,3 +1622,13 @@ class App(tk.Tk):
             self.delete_temporary_image(path)
 
         self.destroy()
+
+
+
+def main():
+    app = App()
+    app.mainloop()
+
+
+if __name__ == "__main__":
+    main()
