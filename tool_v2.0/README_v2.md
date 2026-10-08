@@ -151,7 +151,7 @@ pip install -r requirements.txt
 ## Run the Application
 
 ```bash
-python main_eval_final.py
+python main_eval_final_v2.py
 ```
 
 ## Build the Executable
@@ -159,7 +159,7 @@ python main_eval_final.py
 ### 1. Create a PyInstaller spec file
 
 ```bash
-pyi-makespec --onefile --noconsole --icon=processing_v2.ico main_eval_final.py
+pyi-makespec --onefile --noconsole --icon=processing_v2.ico main_eval_final_v2.py
 ```
 
 ### 2. Add the PDF templates and icon to the spec file
