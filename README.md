@@ -9,7 +9,12 @@ This repository contains three versions of the tool:
 ### `tool_v1.0`
 Original version of the Evaluation Automation Tool.
 
-This version contains the earlier workflow and UI used before the Version 2 redesign.
+This version contains the earlier workflow and UI:
+
+- Extract Helpdesk data 
+- Select options with checkboxes
+- Generate folders and final filled PDFs
+
 
 ### `tool_v2.0`
 Second version of the tool.
@@ -106,9 +111,14 @@ python main_eval_final_v3.py
 2. The application automatically extracts Job, Customer, Model, and Serial.
 3. Upload or paste evaluation screenshots.
 4. Extract evaluation comments with OCR.
-5. Search for required repairs or add a custom repair.
-6. Choose the output option (Folder and PDF, Folders Only, or PDF Only).
-7. Process the job and optionally print the generated PDF.
+5. Suggested repairs are listed from the extracted comments — leaking/bubbles →
+   leak repair; damage/torn/tear/hole/"many ..." → part replacement; 3D/4D
+   error / can't find home / broken driving wire → 3D/4D repair + array housing
+   replacement; peeling/discolored/yellow stains/scratches → cosmetic. "Use as
+   is" comments suggest nothing.
+6. Search for required repairs or add a custom repair.
+7. Choose the output option (Folder and PDF, Folders Only, or PDF Only).
+8. Process the job and optionally print the generated PDF.
 
 Evaluation form (`ev7.pdf`) fills info, notes, and repair fields. Final form
 (`preship5.pdf`) fills info only.

@@ -36,6 +36,53 @@ descriptions_by_category = {
 other_category = "Other"
 repair_categories = tuple(descriptions_by_category) + (other_category,)
 
+# Rules for suggesting repairs from extracted notes. First matching rule wins.
+# Each entry is (field labels, comment keywords, repairs). A rule matches when
+# the note's label is listed and a keyword starts a word in the comment
+# (case-insensitively). "{label}" in a repair text is the note's label.
+part_labels = (
+    "Lens", "Cap", "Array", "Shaft Housing", "Housing Strain Relief",
+    "Cable", "Connector Strain Relief", "Connector Housing",
+)
+
+repair_suggestion_rules = (
+    # Leak: leaking/leak, bubbles.
+    (part_labels + ("Airscan",), ("leak", "bubble"), ("Repair: Leak",)),
+    # Physical damage: replacement of the labelled part.
+    (
+        part_labels,
+        ("damage", "torn", "tear", "delaminat", "cut", "hole", "many"),
+        ("Replacement: {label}",),
+    ),
+    # 3D/4D errors: repair 3D/4D plus array housing replacement.
+    (
+        ("3D/4D", "3D/4D Function", "Airscan", "Color Artifacts", "Image"),
+        ("3d/4d", "error", "find home", "broken", "wire"),
+        ("Repair: 3D/4D", "Replacement: Array Housing"),
+    ),
+    # Cosmetic only: peeling, discolored, yellow stains, scratches.
+    (
+        part_labels,
+        ("peel", "discolo", "yellow", "stain", "scratch"),
+        ("Cosmetic: {label}",),
+    ),
+)
+
+# Fallback for a known field label when no keyword rule matches. Keys are the
+# labels as they appear in the extracted notes.
+suggested_repairs_by_label = {
+    "Lens": "Replacement: Lens",
+    "Cap": "Replacement: Cap",
+    "Array": "Replacement: Array",
+    "Shaft Housing": "Replacement: Shaft Housing",
+    "Housing Strain Relief": "Replacement: Housing Strain Relief",
+    "Cable": "Replacement: Cable",
+    "Connector Strain Relief": "Replacement: Connector Strain Relief",
+    "Connector Housing": "Replacement: Connector Housing",
+    "3D/4D": "Repair: 3D/4D",
+    "3D/4D Function": "Repair: 3D/4D",
+}
+
 form_evaluation = "Evaluation"
 form_final = "Final"
 
@@ -337,10 +384,10 @@ class App(tk.Tk):
         frame = ttk.LabelFrame(self.main_frame, text="Repairs", padding="0 10")
         frame.grid(row=2, column=0, sticky="ew", pady=(0, 8))
         self.repairs_panel = frame
-        self.add_weighted_columns(frame, 5, 3, 5, uniform="repair")
+        self.add_weighted_columns(frame, 5, 5, 3, 5, uniform="repair")
 
         question = ttk.Frame(frame)
-        question.grid(row=0, column=0, columnspan=3, sticky="w", pady=(0, 8))
+        question.grid(row=0, column=0, columnspan=4, sticky="w", pady=(0, 8))
 
         ttk.Label(
             question, text="Do you need to fill in the repair part?"
@@ -356,13 +403,14 @@ class App(tk.Tk):
             start_column=1,
         )
 
+        self.build_suggested_repairs_panel(frame)
         self.build_find_repairs_panel(frame)
         self.build_custom_repair_panel(frame)
         self.build_selected_repairs_panel(frame)
 
     def build_find_repairs_panel(self, parent):
         frame = ttk.LabelFrame(parent, text="Find Repairs", padding=8)
-        frame.grid(row=1, column=0, sticky="nsew", padx=(0, 5))
+        frame.grid(row=1, column=1, sticky="nsew", padx=5)
         self.add_weighted_columns(frame, 1)
 
         self.repair_search_var = tk.StringVar()
@@ -428,7 +476,7 @@ class App(tk.Tk):
 
     def build_custom_repair_panel(self, parent):
         frame = ttk.LabelFrame(parent, text="Custom Repair", padding=8)
-        frame.grid(row=1, column=1, sticky="nsew", padx=5)
+        frame.grid(row=1, column=2, sticky="nsew", padx=5)
         self.add_weighted_columns(frame, 1)
 
         self.custom_toggle_var = tk.BooleanVar(value=False)
@@ -481,7 +529,7 @@ class App(tk.Tk):
 
     def build_selected_repairs_panel(self, parent):
         frame = ttk.LabelFrame(parent, text="Selected Repairs", padding=8)
-        frame.grid(row=1, column=2, sticky="nsew", padx=(5, 0))
+        frame.grid(row=1, column=3, sticky="nsew", padx=(5, 0))
         self.add_weighted_columns(frame, 1)
 
         self.selected_repairs_listbox = tk.Listbox(
@@ -502,6 +550,26 @@ class App(tk.Tk):
         )
 
         self.listbox_repair_by_index = {}
+
+    def build_suggested_repairs_panel(self, parent):
+        frame = ttk.LabelFrame(parent, text="Suggested Repairs", padding=8)
+        frame.grid(row=1, column=0, sticky="nsew", padx=(0, 5))
+        self.suggested_panel = frame
+        self.add_weighted_columns(frame, 1)
+
+        self.suggested_hint = ttk.Label(
+            frame, text="Extract evaluation notes to get suggestions.", foreground="#555555"
+        )
+        self.suggested_hint.grid(row=0, column=0, sticky="w", pady=(0, 4))
+
+        self.suggested_frame = ttk.Frame(frame)
+        self.suggested_frame.grid(row=1, column=0, sticky="nsew")
+
+        self.suggested_no_match = ttk.Label(frame, text="No suggestions.")
+        self.suggested_no_match.grid(row=1, column=0, sticky="w")
+        self.suggested_no_match.grid_remove()
+
+        self.suggested_check_vars = {}
 
     def build_bottom_section(self):
         frame = ttk.Frame(self.main_frame)
@@ -1148,6 +1216,8 @@ class App(tk.Tk):
         if self.extracted_notes_text:
             self.output_textbox.insert("1.0", "Notes:\n" + self.extracted_notes_text)
 
+        self.refresh_suggested_repairs()
+
     def clear_output(self):
         self.extracted_notes_text = ""
         self.render_output()
@@ -1252,6 +1322,93 @@ class App(tk.Tk):
         else:
             self.remove_repair(repair_text)
 
+    def suggest_repairs_for_note(self, label, comment):
+        # "use as is" / "used as it is" means no repair, so no suggestion.
+        if re.search(r"\bas (?:it )?is\b", comment, re.IGNORECASE):
+            return []
+
+        for labels, keywords, repairs in repair_suggestion_rules:
+            if label not in labels:
+                continue
+
+            if not re.search(
+                r"\b(?:%s)" % "|".join(keywords), comment, re.IGNORECASE
+            ):
+                continue
+
+            return [text.format(label=label) for text in repairs]
+
+        fallback = suggested_repairs_by_label.get(label)
+        return [fallback] if fallback else []
+
+    def get_suggested_repairs(self):
+        notes = [
+            (label.strip(), comment.strip())
+            for line in self.extracted_notes_text.splitlines()
+            for label, _, comment in [line.partition(":")]
+        ]
+
+        suggestions = []
+
+        for label, comment in notes:
+            for repair_text in self.suggest_repairs_for_note(label, comment):
+                if repair_text not in suggestions:
+                    suggestions.append(repair_text)
+
+        return suggestions
+
+    def refresh_suggested_repairs(self):
+        if not hasattr(self, "suggested_check_vars"):
+            return
+
+        for child in self.suggested_frame.winfo_children():
+            child.destroy()
+
+        self.suggested_check_vars = {}
+
+        if not self.extracted_notes_text.strip():
+            self.suggested_no_match.grid_remove()
+            self.suggested_hint.grid()
+            return
+
+        suggestions = self.get_suggested_repairs()
+        enabled = self.repairs_enabled()
+
+        if not suggestions:
+            self.suggested_hint.grid_remove()
+            self.suggested_no_match.grid()
+            return
+
+        self.suggested_hint.grid_remove()
+        self.suggested_no_match.grid_remove()
+
+        for repair_text in suggestions:
+            check_variable = tk.BooleanVar(
+                value=repair_text in self.selected_repairs
+            )
+            command = lambda text=repair_text: self.on_suggested_repair_toggled(
+                text
+            )
+
+            checkbutton = ttk.Checkbutton(
+                self.suggested_frame,
+                text=repair_text,
+                variable=check_variable,
+                command=command,
+            )
+            checkbutton.pack(anchor="w")
+
+            if not enabled:
+                checkbutton.state(["disabled"])
+
+            self.suggested_check_vars[repair_text] = (check_variable, checkbutton)
+
+    def on_suggested_repair_toggled(self, repair_text):
+        if self.suggested_check_vars[repair_text][0].get():
+            self.add_repair(*repair_text.split(": ", 1))
+        else:
+            self.remove_repair(repair_text)
+
     def add_repair(self, category, description):
         repair_text = f"{category}: {description}"
 
@@ -1346,6 +1503,11 @@ class App(tk.Tk):
         for repair_text, check_variable in self.repair_check_vars.items():
             check_variable.set(repair_text in self.selected_repairs)
 
+        for repair_text, (check_variable, _checkbutton) in (
+            self.suggested_check_vars.items()
+        ):
+            check_variable.set(repair_text in self.selected_repairs)
+
     def update_repair_state(self):
         if not hasattr(self, "repair_search_entry"):
             return
@@ -1372,6 +1534,14 @@ class App(tk.Tk):
             self.repair_search_hint.grid_remove()
 
         self.set_widgets_enabled(self.repair_checkbuttons.values(), enabled)
+
+        self.set_widgets_enabled(
+            [
+                checkbutton
+                for _check_variable, checkbutton in self.suggested_check_vars.values()
+            ],
+            enabled,
+        )
 
         self.set_widgets_enabled(
             (

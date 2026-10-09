@@ -62,6 +62,21 @@ Form type determines the source template and behavior:
 
 Folder names follow `Job-Model Serial (#Job{Esuffix}-Customer)`.
 
+### Suggested Repairs
+
+After extraction, the **Suggested Repairs** panel lists repairs implied by the
+evaluation comments (checkboxes — tick the ones to use). Rules, first match
+wins:
+
+| Comment keywords | Suggestion |
+|------------------|------------|
+| leaking, leak, bubbles | `Repair: Leak` |
+| damaged, torn, tear, delaminated, cut, hole, many ... (e.g. many dead elements / paint scratches / deep scratches) | `Replacement: <field>` |
+| 3D/4D error, can't find home, broken driving wire | `Repair: 3D/4D` and `Replacement: Array Housing` |
+| peeling, discolored, yellow stains, scratches | `Cosmetic: <field>` |
+
+Comments saying **"use as is" / "used as it is"** produce no suggestion.
+
 ## PDF → Images
 
 - **Source** — select one or more PDF files (or type/paste a folder path to
