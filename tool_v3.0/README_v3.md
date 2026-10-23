@@ -129,3 +129,7 @@ Behavior notes:
 - `image_folder_organizer.py` — organize-files tab and matching logic.
 - `utils_v3.py` — PDF form filling (PyPDF2) and PyInstaller resource helper.
 - `ev7.pdf`, `preship5.pdf` — fillable templates.
+
+## Make Spec and Build The EXE
+python -m PyInstaller.utils.cliutils.makespec --onefile --windowed --add-data "ev7.pdf;." --add-data "preship5.pdf;." --add-data "processing_v3.ico;." --add-data "tesseract-ocr;tesseract-ocr" --icon "processing_v3.ico" --name "ProbeLab_Tool" main-eval_final_v3.py
+
